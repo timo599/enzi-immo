@@ -1,0 +1,97 @@
+version: '3.9'
+
+# Produktions-Compose für Self-Hosting (z.B. VPS / Hetzner)
+# Railway: Nur die App; PostgreSQL + Redis via Railway-Plugins
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      NODE_ENV:            production
+      DATABASE_URL:        ${DATABASE_URL}
+      REDIS_URL:           ${REDIS_URL}
+      JWT_SECRET:          ${JWT_SECRET}
+      ANTHROPIC_API_KEY:   ${ANTHROPIC_API_KEY}
+      S3_ENDPOINT:         ${S3_ENDPOINT}
+      S3_BUCKET:           ${S3_BUCKET}
+      S3_REGION:           ${S3_REGION}
+      S3_ACCESS_KEY:       ${S3_ACCESS_KEY}
+      S3_SECRET_KEY:       ${S3_SECRET_KEY}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-false}
+      CORS_ORIGIN:         ${CORS_ORIGIN}
+      LOG_LEVEL:           ${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "npx prisma migrate deploy && node dist/server.js"
+
+  worker:
+    build: .
+    restart: unless-stopped
+    environment:
+      NODE_ENV:            production
+      DATABASE_URL:        ${DATABASE_URL}
+      REDIS_URL:           ${REDIS_URL}
+      JWT_SECRET:          ${JWT_SECRET}
+      ANTHROPIC_API_KEY:   ${ANTHROPIC_API_KEY}
+      S3_ENDPOINT:         ${S3_ENDPOINT}
+      S3_BUCKET:           ${S3_BUCKET}
+      S3_REGION:           ${S3_REGION}
+      S3_ACCESS_KEY:       ${S3_ACCESS_KEY}
+      S3_SECRET_KEY:       ${S3_SECRET_KEY}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-false}
+      LOG_LEVEL:           ${LOG_LEVEL:-info}
+    depends_on:
+      - app
+    command: node dist/workers/extraction.worker.js
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-immo_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB:       ${POSTGRES_DB:-immo_manager}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-immo_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER:     ${S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:

@@ -1,0 +1,4 @@
+Buchungstag;Valutadatum;Auftraggeber/Beguenstigter;Beguenstigter/Zahlungspflichtiger;Kontonummer/IBAN;BIC;Betrag;Glaeubiger ID;Mandatsreferenz;Verwendungszweck;Buchungstext;Gaeubigerident;Mandantenreferenz;Kundenreferenz
+04.01.24;04.01.24;Max Mustermann;Max Mustermann;DE75512108001245126199;SSKMDEMMXXX;800,00;;;Miete Januar 2024 Whg 3 OG links;Gutschrift;;
+05.01.24;05.01.24;Max Mustermann;Max Mustermann;DE75512108001245126199;SSKMDEMMXXX;150,00;;;NK Vorauszahlung Januar Wohnnebenkosten;Gutschrift;;
+06.01.24;06.01.24;Stadtwerke München;Stadtwerke München;DE02200400600029349371;COBADEFFXXX;-89,50;;;Strom Abschlag Januar;Lastschrift;;

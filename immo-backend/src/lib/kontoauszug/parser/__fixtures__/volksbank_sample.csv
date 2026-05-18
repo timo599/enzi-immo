@@ -1,0 +1,4 @@
+Buchungsdatum;Valuta;Auftraggeber/Empfänger;IBAN/Konto;Vorgang/Verwendungszweck;Umsatz in EUR;Gläubiger-ID;Mandats-Referenz
+04.01.2024;04.01.2024;Max Mustermann;DE75512108001245126199;Miete Januar Wohnung EG links;800,00;;
+05.01.2024;05.01.2024;Anna Schmidt;DE89370400440532013000;NK-Vorauszahlung 01/2024;120,00;;
+10.01.2024;10.01.2024;Hausverwaltung GmbH;DE44200400600292232000;Rücklage Instandhaltung;-200,00;;

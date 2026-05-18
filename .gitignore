@@ -1,0 +1,42 @@
+# ── OS / Editor ────────────────────────────────────────────────
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.log
+
+# ── Dependencies (werden via npm install neu erzeugt) ──────────
+**/node_modules/
+
+# ── Build-Output ───────────────────────────────────────────────
+**/dist/
+**/.next/
+**/build/
+**/out/
+**/.turbo/
+**/*.tsbuildinfo
+
+# ── Secrets (NIEMALS committen!) ───────────────────────────────
+**/.env
+**/.env.local
+**/.env.production
+**/.env.development.local
+
+# ── Privat: User-Daten / Backups ───────────────────────────────
+/Allgemeines/
+/Mietverträge/
+/bin/
+*.tar.gz
+*.zip
+
+# ── Vercel ─────────────────────────────────────────────────────
+.vercel
+
+# ── Fly.io ─────────────────────────────────────────────────────
+fly.toml.bak
+
+# ── Test-Coverage ──────────────────────────────────────────────
+**/coverage/
+
+# ── Native ─────────────────────────────────────────────────────
+*.pem

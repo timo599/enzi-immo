@@ -1,0 +1,942 @@
+// ============================================================
+// ImmoManager Pro – Prisma Schema v1.0
+// PostgreSQL 16+
+// ============================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgcrypto, pg_trgm, unaccent]
+}
+
+// ── ENUMS ────────────────────────────────────────────────────
+
+enum Heizungsart {
+  oel
+  gas
+  fernwaerme
+  strom
+  waermepumpe
+  pellets
+  sonstiges
+}
+
+enum Einheitstyp {
+  wohnung
+  gewerbe
+  buero
+  laden
+  lager
+  stellplatz
+  praxis
+  loft
+  sonstiges
+}
+
+enum Mietart {
+  wohnraum
+  gewerbe
+}
+
+enum UserRole {
+  admin
+  verwalter
+  assistent
+  eigentuemer_readonly
+}
+
+enum ExtractionStatus {
+  pending
+  processing
+  extracted
+  needs_review
+  reviewed
+  failed
+  manual
+}
+
+enum MatchingStatus {
+  unmatched
+  auto_matched
+  manually_matched
+  ambiguous
+  ignored
+}
+
+enum Buchungstyp {
+  miete
+  nk_vorauszahlung
+  miete_und_nk
+  nk_nachzahlung
+  kaution
+  nk_guthaben
+  sonstiges
+}
+
+enum AbrechnungStatus {
+  entwurf
+  in_pruefung
+  freigegeben
+  versendet
+  abgeschlossen
+}
+
+enum AmpelStatus {
+  faellig
+  bald_faellig
+  geplant
+  kein_handlungsbedarf
+  manuelle_pruefung
+}
+
+enum Erhoehungstyp {
+  staffel
+  index
+  vertraglich
+  sonstig
+}
+
+enum Umlageschluessel {
+  wohnflaeche
+  gesamtflaeche
+  personenanzahl
+  verbrauchsmessung
+  miteigentumsanteile
+  gleiche_teile
+}
+
+enum Umlagefaehig {
+  ja
+  nein
+  teilweise
+}
+
+enum PostenStatus {
+  offen
+  teilbezahlt
+  bezahlt
+  storniert
+}
+
+enum Vollstaendigkeitsstatus {
+  vollstaendig
+  kosten_ohne_verbrauch
+  fehlt
+}
+
+enum Verbrauchstyp {
+  oel
+  strom_gemein
+  strom_einheit
+  gas
+  wasser_kalt
+  wasser_warm
+  fernwaerme
+}
+
+enum Plan {
+  starter
+  professional
+  enterprise
+}
+
+enum DokumentKategorie {
+  rechnung
+  mietvertrag
+  mietvertrag_anlage
+  kuendigung
+  uebergabeprotokoll
+  minol
+  zaehler_foto
+  zaehlerstand
+  betriebskostenabrechnung
+  versicherung
+  grundsteuer
+  korrespondenz
+  ausweis
+  bankverbindung
+  sonstiges
+}
+
+// ── MODELS ───────────────────────────────────────────────────
+
+model Tenant {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  slug       String   @unique
+  plan       Plan     @default(starter)
+  aktiv      Boolean  @default(true)
+  erstelltAm DateTime @default(now()) @map("erstellt_am")
+
+  users                 User[]
+  firmen                Firma[]
+  objekte               Objekt[]
+  einheiten             Einheit[]
+  mieter                Mieter[]
+  mietvertraege         Mietvertrag[]
+  kostenarten           Kostenart[]
+  bankkonten            Bankkonto[]
+  lieferanten           Lieferant[]
+  abrechnungszeitraeume Abrechnungszeitraum[]
+  dokumente             Dokument[]
+  kostenpositionen      Kostenposition[]
+  nkAbrechnungen        NkAbrechnung[]
+  verbrauchserfassungen Verbrauchserfassung[]
+  kontoauszuege         Kontoauszug[]
+  buchungszeilen        Buchungszeile[]
+  offenePosten          OffenerPosten[]
+  mieterhoehungen       Mieterhoehung[]
+  exporte               Export[]
+  zaehler               Zaehler[]
+
+  @@map("tenants")
+}
+
+model User {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  email        String
+  passwordHash String    @map("password_hash")
+  vorname      String?
+  nachname     String?
+  rolle        UserRole  @default(verwalter)
+  aktiv        Boolean   @default(true)
+  letzterLogin DateTime? @map("letzter_login")
+  erstelltAm   DateTime  @default(now()) @map("erstellt_am")
+
+  tenant                   Tenant             @relation(fields: [tenantId], references: [id])
+  erstellteObjekte         Objekt[]           @relation("ObjektErsteller")
+  erstellteVertraege       Mietvertrag[]      @relation("VertragErsteller")
+  reviewedExtraktionen     DokExtraktion[]    @relation("ExtractionReviewer")
+  freigegebeneAbrechnungen NkAbrechnung[]     @relation("AbrechnungFreigeber")
+  erstellteAbrechnungen    NkAbrechnung[]     @relation("AbrechnungErsteller")
+  bestaetigteMatchings     MatchingErgebnis[] @relation("MatchingBestaetiger")
+  zugeordneteBuchungen     Buchungszeile[]    @relation("BuchungZuordner")
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+model Firma {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  name       String
+  rechtsform String?
+  strasse    String?
+  plz        String?
+  stadt      String?
+  notizen    String?
+  aktiv      Boolean  @default(true)
+  erstelltAm DateTime @default(now()) @map("erstellt_am")
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  objekte Objekt[]
+
+  @@index([tenantId])
+  @@map("firmen")
+}
+
+model Objekt {
+  id                  String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String      @map("tenant_id") @db.Uuid
+  firmaId             String?     @map("firma_id") @db.Uuid
+  bezeichnung         String
+  strasse             String
+  hausnummer          String
+  plz                 String
+  stadt               String
+  bundesland          String?
+  baujahr             Int?
+  heizungsart         Heizungsart
+  wohnflaecheGesamtM2 Decimal     @map("wohnflaeche_gesamt_m2") @db.Decimal(10, 2)
+  nutzflaecheGesamtM2 Decimal?    @map("nutzflaeche_gesamt_m2") @db.Decimal(10, 2)
+  meaGesamt           Int         @default(1000) @map("mea_gesamt")
+  notizen             String?
+  aktiv               Boolean     @default(true)
+  erstelltAm          DateTime    @default(now()) @map("erstellt_am")
+  erstelltVon         String?     @map("erstellt_von") @db.Uuid
+  geaendertAm         DateTime?   @map("geaendert_am")
+  deletedAt           DateTime?   @map("deleted_at")
+
+  tenant                Tenant                @relation(fields: [tenantId], references: [id])
+  firma                 Firma?                @relation(fields: [firmaId], references: [id])
+  ersteller             User?                 @relation("ObjektErsteller", fields: [erstelltVon], references: [id])
+  einheiten             Einheit[]
+  umlageschluessel      UmlageschluesselEintrag[]
+  abrechnungszeitraeume Abrechnungszeitraum[]
+  verbrauchserfassungen Verbrauchserfassung[]
+  bankkontoObjekte      BankkontoObjekt[]
+  zaehler               Zaehler[]
+  dokumente             Dokument[]
+
+  @@index([tenantId])
+  @@map("objekte")
+}
+
+model Einheit {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String      @map("tenant_id") @db.Uuid
+  objektId      String      @map("objekt_id") @db.Uuid
+  bezeichnung   String
+  einheitenTyp  Einheitstyp @default(wohnung) @map("einheiten_typ")
+  wohnflaecheM2 Decimal?    @map("wohnflaeche_m2") @db.Decimal(8, 2)
+  nutzflaecheM2 Decimal?    @map("nutzflaeche_m2") @db.Decimal(8, 2)
+  etage         String?
+  meaAnteil     Int?        @map("mea_anteil")
+  personenAnzahl Int?       @map("personen_anzahl")
+  aktiv         Boolean     @default(true)
+  notizen       String?
+  erstelltAm    DateTime    @default(now()) @map("erstellt_am")
+  geaendertAm   DateTime?   @map("geaendert_am")
+  deletedAt     DateTime?   @map("deleted_at")
+
+  tenant         Tenant        @relation(fields: [tenantId], references: [id])
+  objekt         Objekt        @relation(fields: [objektId], references: [id])
+  mietvertraege  Mietvertrag[]
+  nkAbrechnungen NkAbrechnung[]
+  zaehler        Zaehler[]
+  dokumente      Dokument[]
+
+  @@index([objektId])
+  @@index([tenantId])
+  @@map("einheiten")
+}
+
+model Mieter {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  anrede       String?
+  vorname      String?
+  nachname     String
+  firmenname   String?
+  zusatz       String?
+  strasse      String?
+  hausnummer   String?
+  plz          String?
+  stadt        String?
+  email        String?
+  telefon      String?
+  iban         String?
+  steuernummer String?
+  notizen      String?
+  deletedAt    DateTime? @map("deleted_at")
+  erstelltAm   DateTime  @default(now()) @map("erstellt_am")
+  geaendertAm  DateTime? @map("geaendert_am")
+
+  tenant            Tenant              @relation(fields: [tenantId], references: [id])
+  mietvertragMieter MietvertragMieter[]
+  dokumente         Dokument[]
+
+  @@index([tenantId])
+  @@map("mieter")
+}
+
+model Mietvertrag {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId               String    @map("tenant_id") @db.Uuid
+  einheitId              String    @map("einheit_id") @db.Uuid
+  mietart                Mietart
+  vertragsbeginn         DateTime  @db.Date
+  vertragsende           DateTime? @db.Date
+  nettomiete             Decimal   @db.Decimal(10, 2)
+  nkVorauszahlung        Decimal   @default(0) @map("nk_vorauszahlung") @db.Decimal(10, 2)
+  kaution                Decimal?  @db.Decimal(10, 2)
+  mietflaecheM2          Decimal?  @map("mietflaeche_m2") @db.Decimal(8, 2)
+  indexKlausel           Boolean   @default(false) @map("index_klausel")
+  indexTyp               String?   @map("index_typ")
+  indexBasisjahr         Int?      @map("index_basisjahr")
+  indexBasiswert         Decimal?  @map("index_basiswert") @db.Decimal(8, 3)
+  kuendigungsfristMieter Int       @default(3) @map("kuendigungsfrist_mieter")
+  kuendigungsfristVerm   Int       @default(3) @map("kuendigungsfrist_verm")
+  notizen                String?
+  erstelltAm             DateTime  @default(now()) @map("erstellt_am")
+  erstelltVon            String?   @map("erstellt_von") @db.Uuid
+  geaendertAm            DateTime? @map("geaendert_am")
+  deletedAt              DateTime? @map("deleted_at")
+
+  tenant             Tenant              @relation(fields: [tenantId], references: [id])
+  einheit            Einheit             @relation(fields: [einheitId], references: [id])
+  ersteller          User?               @relation("VertragErsteller", fields: [erstelltVon], references: [id])
+  mietvertragMieter  MietvertragMieter[]
+  vertragsklauseln   Vertragsklausel[]
+  nkAbrechnungen     NkAbrechnung[]
+  matchingErgebnisse MatchingErgebnis[]
+  offenePosten       OffenerPosten[]
+  mieterhoehungen    Mieterhoehung[]
+  dokumente          Dokument[]
+
+  @@index([einheitId])
+  @@index([tenantId])
+  @@map("mietvertraege")
+}
+
+model MietvertragMieter {
+  mietvertragId String    @map("mietvertrag_id") @db.Uuid
+  mieterId      String    @map("mieter_id") @db.Uuid
+  rolle         String    @default("hauptmieter")
+  seit          DateTime  @db.Date
+  bis           DateTime? @db.Date
+
+  mietvertrag Mietvertrag @relation(fields: [mietvertragId], references: [id])
+  mieter      Mieter      @relation(fields: [mieterId], references: [id])
+
+  @@id([mietvertragId, mieterId])
+  @@index([mieterId])
+  @@map("mietvertrag_mieter")
+}
+
+model Vertragsklausel {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  mietvertragId String    @map("mietvertrag_id") @db.Uuid
+  klauselTyp    String    @map("klausel_typ")
+  inhalt        String
+  gueltigAb     DateTime? @map("gueltig_ab") @db.Date
+  gueltigBis    DateTime? @map("gueltig_bis") @db.Date
+  betrag        Decimal?  @db.Decimal(10, 2)
+  manuellPruefen Boolean  @default(true) @map("manuell_pruefen")
+  erstelltAm    DateTime  @default(now()) @map("erstellt_am")
+
+  mietvertrag Mietvertrag @relation(fields: [mietvertragId], references: [id])
+
+  @@index([mietvertragId])
+  @@map("vertragsklauseln")
+}
+
+model Kostenart {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String           @map("tenant_id") @db.Uuid
+  kuerzel            String
+  bezeichnung        String
+  umlagefaehig       Umlagefaehig     @default(ja)
+  schluesselStandard Umlageschluessel @default(wohnflaeche) @map("schluessel_standard")
+  rechtsgrundlage    String?
+  heizkvRelevant     Boolean          @default(false) @map("heizkv_relevant")
+  systemVordefiniert Boolean          @default(false) @map("system_vordefiniert")
+  aktiv              Boolean          @default(true)
+  erstelltAm         DateTime         @default(now()) @map("erstellt_am")
+
+  tenant           Tenant                     @relation(fields: [tenantId], references: [id])
+  umlageschluessel UmlageschluesselEintrag[]
+  kostenpositionen Kostenposition[]
+  nkPositionen     NkPosition[]
+
+  @@unique([tenantId, kuerzel])
+  @@index([tenantId])
+  @@map("kostenarten")
+}
+
+model UmlageschluesselEintrag {
+  id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String           @map("tenant_id") @db.Uuid
+  objektId            String           @map("objekt_id") @db.Uuid
+  kostenartId         String           @map("kostenart_id") @db.Uuid
+  schluesselTyp       Umlageschluessel @map("schluessel_typ")
+  verbrauchsanteilPct Decimal?         @map("verbrauchsanteil_pct") @db.Decimal(5, 2)
+  flaechenanteilPct   Decimal?         @map("flaechenanteil_pct") @db.Decimal(5, 2)
+  heizkvGeprueft      Boolean          @default(false) @map("heizkv_geprueft")
+  notizen             String?
+
+  objekt    Objekt    @relation(fields: [objektId], references: [id])
+  kostenart Kostenart @relation(fields: [kostenartId], references: [id])
+
+  @@unique([objektId, kostenartId])
+  @@index([objektId])
+  @@map("umlageschluessel")
+}
+
+model Bankkonto {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  bezeichnung  String
+  iban         String
+  bic          String?
+  kontoinhaber String
+  bankName     String?  @map("bank_name")
+  aktiv        Boolean  @default(true)
+  erstelltAm   DateTime @default(now()) @map("erstellt_am")
+
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  bankkontoObjekte BankkontoObjekt[]
+  kontoauszuege    Kontoauszug[]
+
+  @@unique([tenantId, iban])
+  @@map("bankkonten")
+}
+
+model BankkontoObjekt {
+  bankkontoId String @map("bankkonto_id") @db.Uuid
+  objektId    String @map("objekt_id") @db.Uuid
+
+  bankkonto Bankkonto @relation(fields: [bankkontoId], references: [id])
+  objekt    Objekt    @relation(fields: [objektId], references: [id])
+
+  @@id([bankkontoId, objektId])
+  @@map("bankkonto_objekte")
+}
+
+model Lieferant {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  name         String
+  strasse      String?
+  plz          String?
+  stadt        String?
+  steuernummer String?
+  iban         String?
+  kostenartId  String?   @map("kostenart_id") @db.Uuid
+  notizen      String?
+  deletedAt    DateTime? @map("deleted_at")
+  erstelltAm   DateTime  @default(now()) @map("erstellt_am")
+
+  tenant           Tenant           @relation(fields: [tenantId], references: [id])
+  kostenpositionen Kostenposition[]
+
+  @@index([tenantId])
+  @@map("lieferanten")
+}
+
+model Abrechnungszeitraum {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  objektId    String    @map("objekt_id") @db.Uuid
+  bezeichnung String
+  von         DateTime  @db.Date
+  bis         DateTime  @db.Date
+  status      String    @default("offen")
+  erstelltAm  DateTime  @default(now()) @map("erstellt_am")
+  erstelltVon String?   @map("erstellt_von") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at")
+
+  tenant                Tenant                @relation(fields: [tenantId], references: [id])
+  objekt                Objekt                @relation(fields: [objektId], references: [id])
+  dokumente             Dokument[]
+  kostenpositionen      Kostenposition[]
+  nkAbrechnungen        NkAbrechnung[]
+  verbrauchserfassungen Verbrauchserfassung[]
+
+  @@index([objektId])
+  @@map("abrechnungszeitraeume")
+}
+
+model Dokument {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String            @map("tenant_id") @db.Uuid
+  zeitraumId         String?           @map("zeitraum_id") @db.Uuid
+  einheitId          String?           @map("einheit_id") @db.Uuid
+  objektId           String?           @map("objekt_id") @db.Uuid
+  mieterId           String?           @map("mieter_id") @db.Uuid
+  mietvertragId      String?           @map("mietvertrag_id") @db.Uuid
+  dokumentKategorie  DokumentKategorie @default(sonstiges) @map("dokument_kategorie")
+  titel              String?
+  beschreibung       String?
+  originalName       String            @map("original_name")
+  s3Key              String            @unique @map("s3_key")
+  mimeType           String            @map("mime_type")
+  fileSizeBytes      BigInt            @map("file_size_bytes")
+  sha256             String
+  extractionStatus   ExtractionStatus  @default(pending) @map("extraction_status")
+  extractedData      Json?             @map("extracted_data")
+  uploadFehler       String?           @map("upload_fehler")
+  hochgeladenAm      DateTime          @default(now()) @map("hochgeladen_am")
+  hochgeladenVon     String            @map("hochgeladen_von") @db.Uuid
+
+  tenant           Tenant               @relation(fields: [tenantId], references: [id])
+  zeitraum         Abrechnungszeitraum? @relation(fields: [zeitraumId], references: [id])
+  einheit          Einheit?             @relation(fields: [einheitId], references: [id])
+  objekt           Objekt?              @relation(fields: [objektId], references: [id])
+  mieter           Mieter?              @relation(fields: [mieterId], references: [id])
+  mietvertrag      Mietvertrag?         @relation(fields: [mietvertragId], references: [id])
+  extraktion       DokExtraktion?
+  kostenpositionen Kostenposition[]
+
+  @@index([zeitraumId])
+  @@index([einheitId])
+  @@index([objektId])
+  @@index([mieterId])
+  @@index([mietvertragId])
+  @@index([sha256])
+  @@index([tenantId, dokumentKategorie])
+  @@map("dokumente")
+}
+
+model DokExtraktion {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dokumentId      String    @unique @map("dokument_id") @db.Uuid
+  rawResponse     Json      @map("raw_response")
+  extractedFields Json      @map("extracted_fields")
+  confidenceMap   Json      @map("confidence_map")
+  flags           String[]  @default([])
+  modelVersion    String    @map("model_version")
+  promptVersion   String    @map("prompt_version")
+  tokensInput     Int?      @map("tokens_input")
+  tokensOutput    Int?      @map("tokens_output")
+  extrahiertAm    DateTime  @default(now()) @map("extrahiert_am")
+  reviewed        Boolean   @default(false)
+  reviewedVon     String?   @map("reviewed_von") @db.Uuid
+  reviewedAm      DateTime? @map("reviewed_am")
+  reviewNotizen   String?   @map("review_notizen")
+
+  dokument Dokument @relation(fields: [dokumentId], references: [id])
+  reviewer User?    @relation("ExtractionReviewer", fields: [reviewedVon], references: [id])
+
+  @@index([reviewed])
+  @@map("dok_extraktionen")
+}
+
+model Kostenposition {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String    @map("tenant_id") @db.Uuid
+  zeitraumId        String    @map("zeitraum_id") @db.Uuid
+  dokumentId        String?   @map("dokument_id") @db.Uuid
+  kostenartId       String    @map("kostenart_id") @db.Uuid
+  lieferantId       String?   @map("lieferant_id") @db.Uuid
+  rechnungsdatum    DateTime  @db.Date
+  rechnungsnummer   String?
+  periodeVon        DateTime? @map("periode_von") @db.Date
+  periodeBis        DateTime? @map("periode_bis") @db.Date
+  nettobetrag       Decimal   @db.Decimal(10, 2)
+  bruttobetrag      Decimal   @db.Decimal(10, 2)
+  mwstSatz          Decimal?  @map("mwst_satz") @db.Decimal(5, 2)
+  beschreibung      String?
+  erfassungsquelle  String    @default("ki_extraktion")
+  manuellKorrigiert Boolean   @default(false) @map("manuell_korrigiert")
+  nichtUmlagefaehig Boolean   @default(false) @map("nicht_umlagefaehig")
+  erstelltAm        DateTime  @default(now()) @map("erstellt_am")
+  erstelltVon       String?   @map("erstellt_von") @db.Uuid
+
+  tenant       Tenant              @relation(fields: [tenantId], references: [id])
+  zeitraum     Abrechnungszeitraum @relation(fields: [zeitraumId], references: [id])
+  dokument     Dokument?           @relation(fields: [dokumentId], references: [id])
+  kostenart    Kostenart           @relation(fields: [kostenartId], references: [id])
+  lieferant    Lieferant?          @relation(fields: [lieferantId], references: [id])
+  nkPositionen NkPosition[]
+  oelZukaeufe  OelZukauf[]
+
+  @@index([zeitraumId])
+  @@index([kostenartId])
+  @@map("kostenpositionen")
+}
+
+model NkAbrechnung {
+  id                      String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                String           @map("tenant_id") @db.Uuid
+  zeitraumId              String           @map("zeitraum_id") @db.Uuid
+  mietvertragId           String           @map("mietvertrag_id") @db.Uuid
+  einheitId               String           @map("einheit_id") @db.Uuid
+  status                  AbrechnungStatus @default(entwurf)
+  abrechnungsbeginn       DateTime         @db.Date
+  abrechnungsende         DateTime         @db.Date
+  bewohnungstage          Int
+  zeitraumTage            Int              @map("zeitraum_tage")
+  anteilsfaktor           Decimal          @db.Decimal(8, 6)
+  gesamtkostenAnteil      Decimal          @map("gesamtkosten_anteil") @db.Decimal(10, 2)
+  vorauszahlungenGesamt   Decimal          @default(0) @map("vorauszahlungen_gesamt") @db.Decimal(10, 2)
+  nachzahlungOderGuthaben Decimal          @map("nachzahlung_oder_guthaben") @db.Decimal(10, 2)
+  formelLog               Json             @map("formel_log")
+  erstelltAm              DateTime         @default(now()) @map("erstellt_am")
+  erstelltVon             String?          @map("erstellt_von") @db.Uuid
+  freigegebenAm           DateTime?        @map("freigegeben_am")
+  freigegebenVon          String?          @map("freigegeben_von") @db.Uuid
+
+  tenant       Tenant              @relation(fields: [tenantId], references: [id])
+  zeitraum     Abrechnungszeitraum @relation(fields: [zeitraumId], references: [id])
+  mietvertrag  Mietvertrag         @relation(fields: [mietvertragId], references: [id])
+  einheit      Einheit             @relation(fields: [einheitId], references: [id])
+  ersteller    User?               @relation("AbrechnungErsteller", fields: [erstelltVon], references: [id])
+  freigebender User?               @relation("AbrechnungFreigeber", fields: [freigegebenVon], references: [id])
+  positionen   NkPosition[]
+  offenePosten OffenerPosten[]
+  exporte      Export[]
+
+  @@index([mietvertragId])
+  @@index([status])
+  @@map("nk_abrechnungen")
+}
+
+model NkPosition {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  abrechnungId        String   @map("abrechnung_id") @db.Uuid
+  kostenpositionId    String?  @map("kostenposition_id") @db.Uuid
+  kostenartId         String   @map("kostenart_id") @db.Uuid
+  gesamtbetragObjekt  Decimal  @map("gesamtbetrag_objekt") @db.Decimal(10, 2)
+  anteilFaktor        Decimal  @map("anteil_faktor") @db.Decimal(10, 6)
+  anteilFormel        String   @map("anteil_formel")
+  betragEinheit       Decimal  @map("betrag_einheit") @db.Decimal(10, 2)
+  vorauszahlungAnteil Decimal  @default(0) @map("vorauszahlung_anteil") @db.Decimal(10, 2)
+  saldo               Decimal  @db.Decimal(10, 2)
+
+  abrechnung     NkAbrechnung    @relation(fields: [abrechnungId], references: [id])
+  kostenposition Kostenposition? @relation(fields: [kostenpositionId], references: [id])
+  kostenart      Kostenart       @relation(fields: [kostenartId], references: [id])
+
+  @@index([abrechnungId])
+  @@map("nk_positionen")
+}
+
+model Verbrauchserfassung {
+  id                      String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                String                  @map("tenant_id") @db.Uuid
+  objektId                String                  @map("objekt_id") @db.Uuid
+  zeitraumId              String                  @map("zeitraum_id") @db.Uuid
+  verbrauchstyp           Verbrauchstyp
+  anfangsbestand          Decimal?                @db.Decimal(10, 3)
+  anfangsbestandDatum     DateTime?               @map("anfangsbestand_datum") @db.Date
+  endbestand              Decimal?                @db.Decimal(10, 3)
+  endbestandDatum         DateTime?               @map("endbestand_datum") @db.Date
+  verbrauchBerechnet      Decimal?                @map("verbrauch_berechnet") @db.Decimal(10, 3)
+  einheit                 String                  @default("liter")
+  vollstaendigkeitsstatus Vollstaendigkeitsstatus @default(fehlt)
+  formelLog               Json?                   @map("formel_log")
+  notizen                 String?
+  erstelltAm              DateTime                @default(now()) @map("erstellt_am")
+  erstelltVon             String?                 @map("erstellt_von") @db.Uuid
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id])
+  objekt      Objekt              @relation(fields: [objektId], references: [id])
+  zeitraum    Abrechnungszeitraum @relation(fields: [zeitraumId], references: [id])
+  oelZukaeufe OelZukauf[]
+
+  @@unique([objektId, zeitraumId, verbrauchstyp])
+  @@index([zeitraumId])
+  @@map("verbrauchserfassungen")
+}
+
+model OelZukauf {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  verbrauchserfassungId String   @map("verbrauchserfassung_id") @db.Uuid
+  kaufdatum             DateTime @db.Date
+  mengeLiter            Decimal  @map("menge_liter") @db.Decimal(8, 2)
+  preisJeLiter          Decimal? @map("preis_je_liter") @db.Decimal(6, 4)
+  preisGesamt           Decimal  @map("preis_gesamt") @db.Decimal(10, 2)
+  kostenpositionId      String?  @map("kostenposition_id") @db.Uuid
+  notizen               String?
+  erstelltAm            DateTime @default(now()) @map("erstellt_am")
+
+  verbrauchserfassung Verbrauchserfassung @relation(fields: [verbrauchserfassungId], references: [id])
+  kostenposition      Kostenposition?     @relation(fields: [kostenpositionId], references: [id])
+
+  @@index([verbrauchserfassungId])
+  @@map("oel_zukaeufe")
+}
+
+model Kontoauszug {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  bankkontoId      String?  @map("bankkonto_id") @db.Uuid
+  dateiname        String
+  s3Key            String   @unique @map("s3_key")
+  zeitraumVon      DateTime @map("zeitraum_von") @db.Date
+  zeitraumBis      DateTime @map("zeitraum_bis") @db.Date
+  importFormat     String   @map("import_format")
+  importStatus     String   @default("pending") @map("import_status")
+  buchungenGesamt  Int      @default(0) @map("buchungen_gesamt")
+  buchungenMatched Int      @default(0) @map("buchungen_matched")
+  importiertAm     DateTime @default(now()) @map("importiert_am")
+  importiertVon    String   @map("importiert_von") @db.Uuid
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  bankkonto      Bankkonto?      @relation(fields: [bankkontoId], references: [id])
+  buchungszeilen Buchungszeile[]
+
+  @@index([bankkontoId])
+  @@map("kontoauszuege")
+}
+
+model Buchungszeile {
+  id                   String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId             String         @map("tenant_id") @db.Uuid
+  kontoauszugId        String         @map("kontoauszug_id") @db.Uuid
+  buchungsdatum        DateTime       @db.Date
+  wertstellungsdatum   DateTime?      @map("wertstellungsdatum") @db.Date
+  betrag               Decimal        @db.Decimal(12, 2)
+  waehrung             String         @default("EUR")
+  auftraggeberName     String?        @map("auftraggeber_name")
+  auftraggeberIban     String?        @map("auftraggeber_iban")
+  verwendungszweck     String?
+  buchungstext         String?
+  matchingStatus       MatchingStatus @default(unmatched) @map("matching_status")
+  matchingConfidence   Decimal?       @map("matching_confidence") @db.Decimal(4, 3)
+  manuellZugeordnet    Boolean        @default(false) @map("manuell_zugeordnet")
+  zugeordnetVon        String?        @map("zugeordnet_von") @db.Uuid
+  zugeordnetAm         DateTime?      @map("zugeordnet_am")
+  ignoriert            Boolean        @default(false)
+  ignoriertBegruendung String?        @map("ignoriert_begruendung")
+
+  tenant             Tenant             @relation(fields: [tenantId], references: [id])
+  kontoauszug        Kontoauszug        @relation(fields: [kontoauszugId], references: [id])
+  zuordner           User?              @relation("BuchungZuordner", fields: [zugeordnetVon], references: [id])
+  matchingErgebnisse MatchingErgebnis[]
+
+  @@index([kontoauszugId])
+  @@index([auftraggeberIban])
+  @@index([matchingStatus])
+  @@map("buchungszeilen")
+}
+
+model MatchingErgebnis {
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buchungszeileId String      @map("buchungszeile_id") @db.Uuid
+  mietvertragId   String      @map("mietvertrag_id") @db.Uuid
+  buchungstyp     Buchungstyp
+  confidence      Decimal     @db.Decimal(4, 3)
+  matchingGrund   String      @map("matching_grund")
+  prioritaet      Int
+  bestaetigt      Boolean     @default(false)
+  bestaetigtVon   String?     @map("bestaetigt_von") @db.Uuid
+  bestaetigtAm    DateTime?   @map("bestaetigt_am")
+  abgelehnt       Boolean     @default(false)
+  erstelltAm      DateTime    @default(now()) @map("erstellt_am")
+
+  buchungszeile Buchungszeile @relation(fields: [buchungszeileId], references: [id])
+  mietvertrag   Mietvertrag   @relation(fields: [mietvertragId], references: [id])
+  bestaetiger   User?         @relation("MatchingBestaetiger", fields: [bestaetigtVon], references: [id])
+
+  @@index([buchungszeileId])
+  @@index([mietvertragId])
+  @@map("matching_ergebnisse")
+}
+
+model OffenerPosten {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  mietvertragId  String       @map("mietvertrag_id") @db.Uuid
+  periodeMonat   DateTime     @map("periode_monat") @db.Date
+  postenTyp      String       @map("posten_typ")
+  sollBetrag     Decimal      @map("soll_betrag") @db.Decimal(10, 2)
+  istBetrag      Decimal      @default(0) @map("ist_betrag") @db.Decimal(10, 2)
+  faelligAm      DateTime     @map("faellig_am") @db.Date
+  mahnungHinweis Boolean      @default(false) @map("mahnung_hinweis")
+  mahnungDatum   DateTime?    @map("mahnung_datum") @db.Date
+  status         PostenStatus @default(offen)
+  nkAbrechnungId String?      @map("nk_abrechnung_id") @db.Uuid
+  notizen        String?
+  erstelltAm     DateTime     @default(now()) @map("erstellt_am")
+  geaendertAm    DateTime?    @map("geaendert_am")
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  mietvertrag  Mietvertrag   @relation(fields: [mietvertragId], references: [id])
+  nkAbrechnung NkAbrechnung? @relation(fields: [nkAbrechnungId], references: [id])
+
+  @@index([mietvertragId])
+  @@index([status])
+  @@map("offene_posten")
+}
+
+model Mieterhoehung {
+  id                        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                  String        @map("tenant_id") @db.Uuid
+  mietvertragId             String        @map("mietvertrag_id") @db.Uuid
+  erhoehungstyp             Erhoehungstyp
+  mietart                   Mietart
+  naechstmoeglichesDatum    DateTime      @map("naechstmoegliches_datum") @db.Date
+  letzteErhoehungDatum      DateTime?     @map("letzte_erhoehung_datum") @db.Date
+  aktuelleMiete             Decimal       @map("aktuelle_miete") @db.Decimal(10, 2)
+  neueMiete                 Decimal?      @map("neue_miete") @db.Decimal(10, 2)
+  erhoehungsbetrag          Decimal?      @db.Decimal(10, 2)
+  ampelStatus               AmpelStatus   @map("ampel_status")
+  juristischePruefungNoetig Boolean       @default(false) @map("juristische_pruefung_noetig")
+  pruefungshinweis          String?
+  indexAktuellerWert        Decimal?      @map("index_aktueller_wert") @db.Decimal(8, 3)
+  indexQuelle               String?       @map("index_quelle")
+  berechnungLog             Json?         @map("berechnung_log")
+  status                    String        @default("berechnet")
+  erstelltAm                DateTime      @default(now()) @map("erstellt_am")
+  erstelltVon               String?       @map("erstellt_von") @db.Uuid
+  geaendertAm               DateTime?     @map("geaendert_am")
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  mietvertrag Mietvertrag @relation(fields: [mietvertragId], references: [id])
+
+  @@index([mietvertragId])
+  @@index([naechstmoeglichesDatum])
+  @@map("mieterhoehungen")
+}
+
+model Export {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  exportTyp     String    @map("export_typ")
+  referenzTyp   String    @map("referenz_typ")
+  referenzId    String    @map("referenz_id") @db.Uuid
+  s3Key         String    @unique @map("s3_key")
+  dateiname     String
+  fileSizeBytes BigInt?   @map("file_size_bytes")
+  erstelltAm    DateTime  @default(now()) @map("erstellt_am")
+  erstelltVon   String?   @map("erstellt_von") @db.Uuid
+  gueltigBis    DateTime? @map("gueltig_bis")
+  nkAbrechnungId String?  @map("nk_abrechnung_id") @db.Uuid
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  nkAbrechnung NkAbrechnung? @relation(fields: [nkAbrechnungId], references: [id])
+
+  @@index([referenzTyp, referenzId])
+  @@map("exporte")
+}
+
+model AuditLog {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String?   @map("tenant_id") @db.Uuid
+  entityType String    @map("entity_type")
+  entityId   String?   @map("entity_id") @db.Uuid
+  action     String
+  oldData    Json?     @map("old_data")
+  newData    Json?     @map("new_data")
+  changedBy  String?   @map("changed_by") @db.Uuid
+  changedAt  DateTime  @default(now()) @map("changed_at")
+  ipAddress  String?   @map("ip_address")
+  userAgent  String?   @map("user_agent")
+  sessionId  String?   @map("session_id")
+
+  @@index([entityType, entityId])
+  @@index([tenantId, changedAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+// ── ZÄHLER & ABLESESUNGEN ────────────────────────────────────
+
+model Zaehler {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String        @map("tenant_id") @db.Uuid
+  objektId      String?       @map("objekt_id") @db.Uuid
+  einheitId     String?       @map("einheit_id") @db.Uuid
+  bezeichnung   String
+  zaehlernummer String?       @map("zaehlernummer")
+  verbrauchstyp Verbrauchstyp
+  einheit       String        @default("kWh")
+  aktiv         Boolean       @default(true)
+  notizen       String?
+  erstelltAm    DateTime      @default(now()) @map("erstellt_am")
+
+  tenant    Tenant         @relation(fields: [tenantId], references: [id])
+  objekt    Objekt?        @relation(fields: [objektId], references: [id])
+  einheit_r Einheit?       @relation(fields: [einheitId], references: [id])
+  staende   Zaehlerstand[]
+
+  @@index([tenantId])
+  @@index([objektId])
+  @@index([einheitId])
+  @@map("zaehler")
+}
+
+model Zaehlerstand {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  zaehler_id  String   @map("zaehler_id") @db.Uuid
+  ablesedatum DateTime @db.Date
+  stand       Decimal  @db.Decimal(12, 3)
+  verbrauch   Decimal? @db.Decimal(12, 3)
+  notizen     String?
+  erstelltAm  DateTime @default(now()) @map("erstellt_am")
+
+  zaehler Zaehler @relation(fields: [zaehler_id], references: [id], onDelete: Cascade)
+
+  @@index([zaehler_id])
+  @@index([ablesedatum])
+  @@map("zaehlerstaende")
+}

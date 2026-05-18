@@ -1,0 +1,42 @@
+# ─────────────────────────────────────────────────────────────────────
+#  Enzi's Immobilienverwaltung – Fly.io Konfiguration
+# ─────────────────────────────────────────────────────────────────────
+#  Beim ersten Deploy via `fly launch --no-deploy` wird der App-Name
+#  automatisch gesetzt. Danach `fly deploy`.
+# ─────────────────────────────────────────────────────────────────────
+
+# Wird beim `fly launch` automatisch eingetragen (oder hier anpassen)
+app = "enzi-immo-backend"
+
+# Region: fra = Frankfurt (DE) — niedrigste Latenz für deutsche Nutzer
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT     = "3000"
+  HOST     = "0.0.0.0"
+
+[http_service]
+  internal_port = 3000
+  force_https   = true
+  auto_stop_machines  = "stop"   # Spart Kosten — Maschine geht in den Standby
+  auto_start_machines = true     # Wacht beim ersten Request auf
+  min_machines_running = 0       # Auf 1 setzen, falls "Cold Start" stört
+  processes = ["app"]
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout  = "5s"
+    grace_period = "15s"
+    method = "get"
+    path   = "/health"
+
+# Kleinste Maschine — reicht locker für MVP. Bei Bedarf hochstufen.
+[[vm]]
+  size       = "shared-cpu-1x"
+  memory     = "512mb"
+  cpu_kind   = "shared"
+  cpus       = 1
