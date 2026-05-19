@@ -22,6 +22,7 @@ import {
   Zap, Droplets, Flame, Thermometer, Trash2, ChevronDown, ChevronUp, FolderOpen,
 } from 'lucide-react'
 import { DocumentSection } from '@/components/document-section'
+import type { DokumentKategorie } from '@/lib/api'
 
 // ── Typen ─────────────────────────────────────────────────────
 interface Einheit {
@@ -125,7 +126,7 @@ export default function EinheitenPage() {
 
   // Dokument Upload
   const [dokUploading, setDokUploading]       = useState(false)
-  const [dokKategorie, setDokKategorie]       = useState('rechnung')
+  const [dokKategorie, setDokKategorie]       = useState<DokumentKategorie>('rechnung')
 
   const [filterObjektId, setFilterObjektId]   = useState('')
 
