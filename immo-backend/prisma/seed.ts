@@ -74,28 +74,28 @@ async function main() {
     umlagefaehig: 'ja' | 'nein' | 'teilweise'
     schluesselStandard:
       | 'wohnflaeche'
-      | 'mea'
-      | 'verbrauch'
-      | 'personenzahl'
-      | 'einheiten'
-      | 'individuell'
+      | 'gesamtflaeche'
+      | 'verbrauchsmessung'
+      | 'personenanzahl'
+      | 'gleiche_teile'
+      | 'miteigentumsanteile'
     heizkvRelevant?: boolean
   }> = [
-    { kuerzel: 'HEIZ', bezeichnung: 'Heizung & Warmwasser', umlagefaehig: 'ja',   schluesselStandard: 'verbrauch',   heizkvRelevant: true  },
-    { kuerzel: 'WAS',  bezeichnung: 'Wasser & Abwasser',    umlagefaehig: 'ja',   schluesselStandard: 'verbrauch'                          },
-    { kuerzel: 'STR',  bezeichnung: 'Strom Allgemein',      umlagefaehig: 'ja',   schluesselStandard: 'wohnflaeche'                        },
-    { kuerzel: 'MUEL', bezeichnung: 'Müllabfuhr',           umlagefaehig: 'ja',   schluesselStandard: 'einheiten'                          },
-    { kuerzel: 'HAUS', bezeichnung: 'Hausmeister',          umlagefaehig: 'ja',   schluesselStandard: 'wohnflaeche'                        },
-    { kuerzel: 'REIN', bezeichnung: 'Reinigung',            umlagefaehig: 'ja',   schluesselStandard: 'wohnflaeche'                        },
-    { kuerzel: 'GART', bezeichnung: 'Gartenpflege',         umlagefaehig: 'ja',   schluesselStandard: 'wohnflaeche'                        },
-    { kuerzel: 'AUFZ', bezeichnung: 'Aufzug',               umlagefaehig: 'ja',   schluesselStandard: 'wohnflaeche'                        },
-    { kuerzel: 'GVER', bezeichnung: 'Gebäudeversicherung',  umlagefaehig: 'ja',   schluesselStandard: 'wohnflaeche'                        },
-    { kuerzel: 'GST',  bezeichnung: 'Grundsteuer',          umlagefaehig: 'ja',   schluesselStandard: 'wohnflaeche'                        },
-    { kuerzel: 'WART', bezeichnung: 'Wartung',              umlagefaehig: 'ja',   schluesselStandard: 'wohnflaeche'                        },
-    { kuerzel: 'VERW', bezeichnung: 'Verwaltung',           umlagefaehig: 'nein', schluesselStandard: 'wohnflaeche'                        },
-    { kuerzel: 'INST', bezeichnung: 'Instandhaltung',       umlagefaehig: 'nein', schluesselStandard: 'wohnflaeche'                        },
-    { kuerzel: 'SCHO', bezeichnung: 'Schornsteinfeger',     umlagefaehig: 'ja',   schluesselStandard: 'einheiten'                          },
-    { kuerzel: 'SONS', bezeichnung: 'Sonstige umlagefähige Kosten', umlagefaehig: 'ja', schluesselStandard: 'wohnflaeche'                  },
+    { kuerzel: 'HEIZ', bezeichnung: 'Heizung & Warmwasser', umlagefaehig: 'ja',   schluesselStandard: 'verbrauchsmessung', heizkvRelevant: true },
+    { kuerzel: 'WAS',  bezeichnung: 'Wasser & Abwasser',    umlagefaehig: 'ja',   schluesselStandard: 'verbrauchsmessung'                       },
+    { kuerzel: 'STR',  bezeichnung: 'Strom Allgemein',      umlagefaehig: 'ja',   schluesselStandard: 'wohnflaeche'                             },
+    { kuerzel: 'MUEL', bezeichnung: 'Müllabfuhr',           umlagefaehig: 'ja',   schluesselStandard: 'gleiche_teile'                           },
+    { kuerzel: 'HAUS', bezeichnung: 'Hausmeister',          umlagefaehig: 'ja',   schluesselStandard: 'wohnflaeche'                             },
+    { kuerzel: 'REIN', bezeichnung: 'Reinigung',            umlagefaehig: 'ja',   schluesselStandard: 'wohnflaeche'                             },
+    { kuerzel: 'GART', bezeichnung: 'Gartenpflege',         umlagefaehig: 'ja',   schluesselStandard: 'wohnflaeche'                             },
+    { kuerzel: 'AUFZ', bezeichnung: 'Aufzug',               umlagefaehig: 'ja',   schluesselStandard: 'gleiche_teile'                           },
+    { kuerzel: 'GVER', bezeichnung: 'Gebäudeversicherung',  umlagefaehig: 'ja',   schluesselStandard: 'wohnflaeche'                             },
+    { kuerzel: 'GST',  bezeichnung: 'Grundsteuer',          umlagefaehig: 'ja',   schluesselStandard: 'wohnflaeche'                             },
+    { kuerzel: 'WART', bezeichnung: 'Wartung',              umlagefaehig: 'ja',   schluesselStandard: 'wohnflaeche'                             },
+    { kuerzel: 'VERW', bezeichnung: 'Verwaltung',           umlagefaehig: 'nein', schluesselStandard: 'wohnflaeche'                             },
+    { kuerzel: 'INST', bezeichnung: 'Instandhaltung',       umlagefaehig: 'nein', schluesselStandard: 'wohnflaeche'                             },
+    { kuerzel: 'SCHO', bezeichnung: 'Schornsteinfeger',     umlagefaehig: 'ja',   schluesselStandard: 'gleiche_teile'                           },
+    { kuerzel: 'SONS', bezeichnung: 'Sonstige umlagefähige Kosten', umlagefaehig: 'ja', schluesselStandard: 'wohnflaeche'                       },
   ]
 
   for (const k of STANDARD_KOSTENARTEN) {
