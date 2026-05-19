@@ -246,7 +246,7 @@ export default function MieterPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Anrede</Label>
-              <Select value={form.anrede || undefined} onValueChange={(v) => set('anrede', v)}>
+              <Select value={form.anrede || undefined} onValueChange={(v) => set('anrede', v ?? '')}>
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="herr">Herr</SelectItem>

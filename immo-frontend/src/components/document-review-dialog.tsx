@@ -294,7 +294,7 @@ export function DocumentReviewDialog({ dokumentId, open, onClose }: Props) {
             {!isReviewed && (
               <div className="border-t pt-3 space-y-2">
                 <Label className="text-sm">Kostenart * <span className="text-xs text-muted-foreground font-normal">(Pflicht)</span></Label>
-                <Select value={kostenartId} onValueChange={setKostenartId}>
+                <Select value={kostenartId} onValueChange={(v) => setKostenartId(v ?? '')}>
                   <SelectTrigger>
                     <SelectValue placeholder="Kostenart auswählen…" />
                   </SelectTrigger>

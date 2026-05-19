@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import type { DokumentKategorie } from '@/lib/api'
 import { toast } from 'sonner'
 import { datum } from '@/lib/format'
 import {
@@ -87,7 +88,7 @@ export default function ObjektePage() {
   // Dokument upload
   const dokFileRef              = useRef<HTMLInputElement>(null)
   const [dokUploading, setDokUploading] = useState(false)
-  const [dokKategorie, setDokKategorie] = useState('rechnung')
+  const [dokKategorie, setDokKategorie] = useState<DokumentKategorie>('rechnung')
 
   // Minol OCR
   const minolFileRef              = useRef<HTMLInputElement>(null)
