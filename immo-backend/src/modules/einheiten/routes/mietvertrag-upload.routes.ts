@@ -124,7 +124,7 @@ export const einheitMietvertragUploadRoutes: FastifyPluginAsync = async (fastify
       let extracted: ExtractedData
       try {
         const response = await client.messages.create({
-          model: 'claude-sonnet-4-6',
+          model: process.env['ANTHROPIC_MODEL'] ?? 'claude-sonnet-4-6',
           max_tokens: 1500,
           messages: [{ role: 'user', content: [contentBlock, { type: 'text', text: PROMPT }] }],
         })

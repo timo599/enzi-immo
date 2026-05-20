@@ -193,7 +193,7 @@ export const abrechnungApi = {
   list:      (params?: Record<string, unknown>) => api.get('/abrechnungen', { params }),
   berechne:  (body: unknown) => api.post('/abrechnungen/berechne', body),
   freigeben: (id: string) => api.post(`/abrechnungen/${id}/freigeben`),
-  vollstaendigkeit: (zeitraumId: string) => api.get(`/abrechnungen/vollstaendigkeit/${zeitraumId}`),
+  vollstaendigkeit: (zeitraumId: string) => api.get(`/abrechnungszeitraeume/${zeitraumId}/vollstaendigkeit`),
 }
 
 // ── Kontoauszüge ──────────────────────────────────────────────────────────────

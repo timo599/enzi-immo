@@ -101,16 +101,16 @@ export const TEST_KOSTENARTEN = new Map([
 ])
 
 export const TEST_KOSTENPOSITIONEN = [
-  { id: 'kp1', kostenartId: 'ka-heiz',   bruttobetrag: 3456.78 },
-  { id: 'kp2', kostenartId: 'ka-wasser', bruttobetrag:  890.12 },
-  { id: 'kp3', kostenartId: 'ka-vers',   bruttobetrag:  540.00 },
-  { id: 'kp4', kostenartId: 'ka-verwalt', bruttobetrag: 1200.00 }, // nicht umlagefähig
+  { id: 'kp1', kostenartId: 'ka-heiz',    bruttobetrag: 3456.78, nettobetrag: 3456.78 / 1.19 },
+  { id: 'kp2', kostenartId: 'ka-wasser',  bruttobetrag:  890.12, nettobetrag:  890.12 / 1.19 },
+  { id: 'kp3', kostenartId: 'ka-vers',    bruttobetrag:  540.00, nettobetrag:  540.00 / 1.19 },
+  { id: 'kp4', kostenartId: 'ka-verwalt', bruttobetrag: 1200.00, nettobetrag: 1200.00 / 1.19 }, // nicht umlagefähig
 ]
 
 export const TEST_UMLAGE_KONFIGURATIONEN = new Map([
-  ['ka-heiz',   { schluesselTyp: 'wohnflaeche' as const, verbrauchsanteilPct: null, flaechenanteilPct: null, heizkvGeprueft: false }],
-  ['ka-wasser', { schluesselTyp: 'wohnflaeche' as const, verbrauchsanteilPct: null, flaechenanteilPct: null, heizkvGeprueft: false }],
-  ['ka-vers',   { schluesselTyp: 'wohnflaeche' as const, verbrauchsanteilPct: null, flaechenanteilPct: null, heizkvGeprueft: false }],
+  ['ka-heiz',   { kostenartId: 'ka-heiz',   schluesselTyp: 'wohnflaeche' as const, verbrauchsanteilPct: null, flaechenanteilPct: null }],
+  ['ka-wasser', { kostenartId: 'ka-wasser', schluesselTyp: 'wohnflaeche' as const, verbrauchsanteilPct: null, flaechenanteilPct: null }],
+  ['ka-vers',   { kostenartId: 'ka-vers',   schluesselTyp: 'wohnflaeche' as const, verbrauchsanteilPct: null, flaechenanteilPct: null }],
 ])
 
 /** Fertige BerechnungsInput für Standard-Volljahrtest */

@@ -15,7 +15,7 @@ function getClient(): Anthropic {
   return _client
 }
 
-const MODEL = process.env['ANTHROPIC_MODEL'] ?? 'claude-sonnet-4-20250514'
+const MODEL = process.env['ANTHROPIC_MODEL'] ?? 'claude-sonnet-4-6'
 
 // ─── Raw extraction schema (Claude output) ────────────────────
 

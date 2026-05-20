@@ -3,7 +3,7 @@ import type { PrismaClient } from '@prisma/client'
 import { ENZI_TOOLS, HELP_TEXTS } from './enzi.tools.js'
 import { AppError } from '../../utils/errors.js'
 
-const MODEL = process.env['ANTHROPIC_MODEL'] ?? 'claude-sonnet-4-5-20250929'
+const MODEL = process.env['ANTHROPIC_MODEL'] ?? 'claude-sonnet-4-6'
 
 const SYSTEM_PROMPT = `Du bist **Enzi**, der freundliche KI-Assistent für die Immobilienverwaltung der NC Verwaltung.
 

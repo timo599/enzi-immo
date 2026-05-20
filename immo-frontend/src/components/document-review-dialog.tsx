@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Loader2, Sparkles, Check, X, RefreshCw, Pencil } from 'lucide-react'
-import { dokumenteApi, kostenartenApi } from '@/lib/api'
+import { api, dokumenteApi, kostenartenApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -67,12 +67,9 @@ export function DocumentReviewDialog({ dokumentId, open, onClose }: Props) {
   const { data: extRes } = useQuery({
     queryKey: ['extraktion', dokumentId],
     queryFn: async () => {
-      const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1'}/dokumente/${dokumentId}/extraktion`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('immo_token')}` },
-      })
-      if (!r.ok) return null
-      const j = await r.json()
-      return (j.data ?? j) as Extraktion
+      if (!dokumentId) return null
+      const r = await api.get(`/dokumente/${dokumentId}/extraktion`)
+      return (r.data?.data ?? r.data) as Extraktion
     },
     enabled: !!dokumentId && open,
   })

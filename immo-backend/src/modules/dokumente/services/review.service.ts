@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client'
+import type { PrismaClient, ExtractionStatus } from '@prisma/client'
 import { DokumenteRepository, ExtraktionenRepository } from '../repositories/dokumente.repository.js'
 import { writeAudit } from '../../../utils/audit.js'
 import { NotFoundError, ValidationError, AppError } from '../../../utils/errors.js'
@@ -93,7 +93,7 @@ export class ReviewService {
     // Remove resolved flags
     let currentFlags: string[] = extraktion.flags ?? []
     if (input.resolvedFlags?.length) {
-      currentFlags = currentFlags.filter((f) => !input.resolvedFlags!.includes(f))
+      currentFlags = currentFlags.filter((f) => !input.resolvedFlags?.includes(f))
     }
 
     // Re-run betrag_konflikt check on patched values
@@ -257,7 +257,7 @@ export class ReviewService {
       await this.extrRepo.markReviewed(dokumentId, ctx.userId)
     }
 
-    await this.dokRepo.updateStatus(dokumentId, 'reviewed' as any)
+    await this.dokRepo.updateStatus(dokumentId, 'reviewed' as ExtractionStatus)
 
     await writeAudit({
       prisma: this.prisma,
