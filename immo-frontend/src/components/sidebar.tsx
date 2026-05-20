@@ -44,11 +44,13 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex h-screen w-60 flex-col border-r bg-slate-950 text-slate-100">
+    <aside className="flex h-screen w-60 flex-col border-r bg-sidebar text-sidebar-foreground border-border">
       {/* Logo */}
-      <div className="flex items-center gap-2 px-5 py-5 border-b border-slate-800">
-        <Building2 className="h-6 w-6 text-blue-400" />
-        <span className="font-semibold text-sm">Enzi&apos;s Immobilienverwaltung</span>
+      <div className="flex items-center gap-2.5 px-5 py-[18px] border-b border-border">
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary shadow-sm">
+          <Building2 className="h-4 w-4 text-white" />
+        </div>
+        <span className="font-semibold text-[13px] tracking-tight">Enzi&apos;s Immobilienverwaltung</span>
       </div>
 
       {/* Quick Search */}
@@ -57,7 +59,7 @@ export function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+      <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
         {NAV.map(({ href, label, icon: Icon }) => {
           const active = pathname.startsWith(href)
           return (
@@ -65,30 +67,31 @@ export function Sidebar() {
               key={href}
               href={href}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                'flex items-center gap-3 rounded-lg px-3 py-[7px] text-[13px] font-medium transition-all duration-150',
                 active
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               )}
             >
-              <Icon className="h-4 w-4 shrink-0" />
+              <Icon className="h-[15px] w-[15px] shrink-0" />
               <span>{label}</span>
-              {active && <ChevronRight className="ml-auto h-3 w-3" />}
+              {active && <ChevronRight className="ml-auto h-3 w-3 opacity-70" />}
             </Link>
           )
         })}
       </nav>
 
       {/* User + Logout */}
-      <div className="border-t border-slate-800 p-4">
-        <div className="text-xs text-slate-400 mb-1 truncate">{user?.email ?? ''}</div>
-        <button
-          onClick={logout}
-          className="flex items-center gap-2 text-sm text-slate-400 hover:text-red-400 transition-colors"
-        >
-          <LogOut className="h-4 w-4" />
-          Abmelden
-        </button>
+      <div className="border-t border-border p-3">
+        <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-accent transition-colors group">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-semibold shrink-0">
+            {(user?.email ?? 'U').charAt(0).toUpperCase()}
+          </div>
+          <span className="text-xs text-muted-foreground truncate flex-1">{user?.email ?? ''}</span>
+          <button onClick={logout} title="Abmelden">
+            <LogOut className="h-3.5 w-3.5 text-muted-foreground group-hover:text-destructive transition-colors" />
+          </button>
+        </div>
       </div>
     </aside>
   )
