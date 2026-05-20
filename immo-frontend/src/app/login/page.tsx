@@ -6,16 +6,18 @@ import { Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { authApi } from '@/lib/api'
 import { setAuth } from '@/lib/auth'
 import { toast } from 'sonner'
+import axios from 'axios'
 
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [wakingUp, setWakingUp] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -24,10 +26,30 @@ export default function LoginPage() {
       const res = await authApi.login(email, password)
       setAuth(res.data.data.accessToken, res.data.data.user)
       router.push('/dashboard')
-    } catch {
-      toast.error('Anmeldung fehlgeschlagen. E-Mail oder Passwort falsch.')
+    } catch (err) {
+      // Netzwerkfehler = Server schläft → Retry mit Hinweis
+      if (axios.isAxiosError(err) && !err.response) {
+        setWakingUp(true)
+        toast.info('Server wird gestartet, bitte warten…')
+        // 35 Sek warten dann nochmals versuchen
+        await new Promise(r => setTimeout(r, 35000))
+        setWakingUp(false)
+        try {
+          const res2 = await authApi.login(email, password)
+          setAuth(res2.data.data.accessToken, res2.data.data.user)
+          router.push('/dashboard')
+          return
+        } catch { /* zeige Fehler unten */ }
+      }
+      const status = axios.isAxiosError(err) ? err.response?.status : null
+      if (status === 401 || status === 400) {
+        toast.error('Benutzername oder Passwort falsch.')
+      } else {
+        toast.error('Verbindungsfehler – bitte nochmals versuchen.')
+      }
     } finally {
       setLoading(false)
+      setWakingUp(false)
     }
   }
 
@@ -77,8 +99,13 @@ export default function LoginPage() {
                 className="w-full h-10 rounded-xl text-[14px] font-semibold mt-2 bg-primary hover:bg-primary/90 shadow-sm shadow-primary/30 transition-all"
                 disabled={loading}
               >
-                {loading ? 'Anmelden…' : 'Anmelden'}
+                {wakingUp ? 'Server startet…' : loading ? 'Anmelden…' : 'Anmelden'}
               </Button>
+              {wakingUp && (
+                <p className="text-center text-xs text-muted-foreground animate-pulse">
+                  Erster Start dauert ca. 30 Sekunden…
+                </p>
+              )}
             </form>
           </CardContent>
         </Card>
