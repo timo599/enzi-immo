@@ -17,6 +17,7 @@ import {
   Receipt,
   LogOut,
   ChevronRight,
+  Brain,
 } from 'lucide-react'
 import { QuickSearch } from './quick-search'
 
@@ -31,6 +32,7 @@ const NAV = [
   { href: '/abrechnungen',    label: 'NK-Abrechnungen',  icon: Receipt },
   { href: '/kontoauszuege',   label: 'Kontoauszüge',     icon: CreditCard },
   { href: '/mieterhoehungen', label: 'Mieterhöhungen',   icon: TrendingUp },
+  { href: '/lernmodus',       label: 'Lernmodus',         icon: Brain },
 ]
 
 export function Sidebar() {

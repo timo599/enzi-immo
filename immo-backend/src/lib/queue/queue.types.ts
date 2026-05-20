@@ -4,12 +4,13 @@ export const EXTRACTION_QUEUE = 'extraction-jobs'
 export const EXTRACTION_DLQ   = 'extraction-dlq'
 
 export interface ExtractionJobData {
-  dokumentId: string
-  tenantId:   string
-  s3Key:      string
-  mimeType:   string
-  zeitraumId: string | undefined
-  attempt:    number
+  dokumentId:  string
+  tenantId:    string
+  s3Key:       string
+  mimeType:    string
+  zeitraumId:  string | undefined
+  attempt:     number
+  dokumentTyp: string  // "rechnung" | "mietvertrag" | "lernmodus_nk"
 }
 
 export interface ExtractionJobResult {

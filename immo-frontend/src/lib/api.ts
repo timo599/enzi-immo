@@ -164,6 +164,8 @@ export const dokumenteApi = {
   manualReview: (id: string, body: { begruendung: string }) =>
     api.post(`/dokumente/${id}/review/manual`, body),
   retryExtraction: (id: string) => api.post(`/dokumente/${id}/retry-extraction`),
+  mietvertragApply: (id: string, body: { einheitId: string; dryRun?: boolean }) =>
+    api.post(`/dokumente/${id}/mietvertrag-apply`, body),
   // Legacy aliases — kept for compatibility
   review: (id: string, body: unknown) => api.patch(`/dokumente/${id}/review`, body),
   confirm:(id: string) => api.post(`/dokumente/${id}/confirm`),
@@ -235,4 +237,16 @@ export const zaehlerApi = {
 export const minolApi = {
   ocr: (formData: FormData) =>
     api.post('/dokumente/minol-ocr', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+}
+
+// ── Lernmodus ─────────────────────────────────────────────────────────────────
+export const lernmodusApi = {
+  upload:      (formData: FormData) =>
+    api.post('/lernmodus/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  sessionen:   () => api.get('/lernmodus/sessionen'),
+  session:     (id: string) => api.get(`/lernmodus/sessionen/${id}`),
+  starten:     (id: string) => api.post(`/lernmodus/sessionen/${id}/starten`),
+  beantworten: (frageId: string, body: { antwortWert: string; einheitId?: string | null; ueberspringen?: boolean }) =>
+    api.patch(`/lernmodus/fragen/${frageId}/beantworten`, body),
+  abschliessen:(id: string) => api.post(`/lernmodus/sessionen/${id}/abschliessen`),
 }

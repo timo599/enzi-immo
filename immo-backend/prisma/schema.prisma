@@ -193,6 +193,9 @@ model Tenant {
   mieterhoehungen       Mieterhoehung[]
   exporte               Export[]
   zaehler               Zaehler[]
+  lernmodusSessionen    LernmodusSession[]
+  einheitLernwissen     EinheitLernwissen[]
+  kostenartLernwissen   KostenartLernwissen[]
 
   @@map("tenants")
 }
@@ -296,12 +299,14 @@ model Einheit {
   geaendertAm   DateTime?   @map("geaendert_am")
   deletedAt     DateTime?   @map("deleted_at")
 
-  tenant         Tenant        @relation(fields: [tenantId], references: [id])
-  objekt         Objekt        @relation(fields: [objektId], references: [id])
-  mietvertraege  Mietvertrag[]
-  nkAbrechnungen NkAbrechnung[]
-  zaehler        Zaehler[]
-  dokumente      Dokument[]
+  tenant          Tenant              @relation(fields: [tenantId], references: [id])
+  objekt          Objekt              @relation(fields: [objektId], references: [id])
+  mietvertraege   Mietvertrag[]
+  nkAbrechnungen  NkAbrechnung[]
+  zaehler         Zaehler[]
+  dokumente       Dokument[]
+  lernmodusFragen LernmodusFrage[]
+  lernwissen      EinheitLernwissen?
 
   @@index([objektId])
   @@index([tenantId])
@@ -534,6 +539,7 @@ model Dokument {
   mieterId           String?           @map("mieter_id") @db.Uuid
   mietvertragId      String?           @map("mietvertrag_id") @db.Uuid
   dokumentKategorie  DokumentKategorie @default(sonstiges) @map("dokument_kategorie")
+  dokumentTyp        String            @default("rechnung") @map("dokument_typ")
   titel              String?
   beschreibung       String?
   originalName       String            @map("original_name")
@@ -555,6 +561,7 @@ model Dokument {
   mietvertrag      Mietvertrag?         @relation(fields: [mietvertragId], references: [id])
   extraktion       DokExtraktion?
   kostenpositionen Kostenposition[]
+  lernmodusSession LernmodusSession?
 
   @@index([zeitraumId])
   @@index([einheitId])
@@ -939,4 +946,78 @@ model Zaehlerstand {
   @@index([zaehler_id])
   @@index([ablesedatum])
   @@map("zaehlerstaende")
+}
+
+// ─── Lernmodus ────────────────────────────────────────────────────────────────
+
+model LernmodusSession {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  dokumentId  String    @unique @map("dokument_id") @db.Uuid
+  status      String    @default("extrahiert")
+  rohDaten    Json      @default("{}") @map("roh_daten")
+  erstelltAm  DateTime  @default(now()) @map("erstellt_am")
+  erstelltVon String    @map("erstellt_von") @db.Uuid
+  geaendertAm DateTime? @updatedAt @map("geaendert_am")
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id])
+  dokument Dokument         @relation(fields: [dokumentId], references: [id])
+  fragen   LernmodusFrage[]
+
+  @@index([tenantId])
+  @@map("lernmodus_sessionen")
+}
+
+model LernmodusFrage {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId     String    @map("session_id") @db.Uuid
+  frageTyp      String    @map("frage_typ")
+  fragentext    String
+  einheitRef    String?   @map("einheit_ref")
+  vorschlagWert String?   @map("vorschlag_wert")
+  bestaetigt    Boolean   @default(false)
+  antwortWert   String?   @map("antwort_wert")
+  einheitId     String?   @map("einheit_id") @db.Uuid
+  erstelltAm    DateTime  @default(now()) @map("erstellt_am")
+  beantwortetAm DateTime? @map("beantwortet_am")
+
+  session LernmodusSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  einheit Einheit?         @relation(fields: [einheitId], references: [id])
+
+  @@index([sessionId])
+  @@map("lernmodus_fragen")
+}
+
+model EinheitLernwissen {
+  id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                 String    @map("tenant_id") @db.Uuid
+  einheitId                String    @unique @map("einheit_id") @db.Uuid
+  quelleSessionId          String?   @map("quelle_session_id") @db.Uuid
+  personenAnzahlBestaetigt Int?      @map("personen_anzahl_bestaetigt")
+  wohnflaecheBestaetigt    Decimal?  @map("wohnflaeche_bestaetigt") @db.Decimal(8, 2)
+  notizen                  String?
+  erstelltAm               DateTime  @default(now()) @map("erstellt_am")
+  geaendertAm              DateTime? @updatedAt @map("geaendert_am")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  einheit Einheit @relation(fields: [einheitId], references: [id])
+
+  @@unique([tenantId, einheitId])
+  @@index([tenantId])
+  @@map("einheit_lernwissen")
+}
+
+model KostenartLernwissen {
+  id                    String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId              String           @map("tenant_id") @db.Uuid
+  kostenartKuerzel      String           @map("kostenart_kuerzel")
+  bevorzugterSchluessel Umlageschluessel @map("bevorzugter_schluessel")
+  quelleSessionId       String?          @map("quelle_session_id") @db.Uuid
+  erstelltAm            DateTime         @default(now()) @map("erstellt_am")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, kostenartKuerzel])
+  @@index([tenantId])
+  @@map("kostenart_lernwissen")
 }

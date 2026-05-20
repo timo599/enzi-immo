@@ -2,7 +2,7 @@
 // IMPORTANT: Increment PROMPT_VERSION whenever the prompt text or
 // response schema changes. This enables forensic replay of extractions.
 
-export const PROMPT_VERSION = 'v1.0.0'
+export const PROMPT_VERSION = 'v1.1.0'
 
 // ─── Confidence thresholds per field ───────────────────────────
 // Fields below these thresholds are flagged as needs_review.
@@ -65,7 +65,10 @@ Das JSON muss exakt diesem Schema entsprechen:
     "beschreibung_freitext": 0.0-1.0
   },
   "flags": [],
-  "konflikte": []
+  "konflikte": [],
+  "rechnungstyp": "gesamtobjekt" | "einzelwohnung" | "unbekannt",
+  "einheit_hinweis": "String oder null",
+  "verteilerschluessel_vorschlag": "wohnflaeche" | "personenzahl" | "gleiche_teile" | "verbrauchsmessung" | null
 }
 
 REGELN FÜR FELDER:

@@ -123,12 +123,13 @@ export class DokumenteService {
 
     // 8. Enqueue extraction job
     const jobId = await enqueueExtraction({
-      dokumentId: dokument.id,
-      tenantId:   ctx.tenantId,
+      dokumentId:  dokument.id,
+      tenantId:    ctx.tenantId,
       s3Key,
       mimeType,
       zeitraumId,
-      attempt:    0,
+      attempt:     0,
+      dokumentTyp: (opts as any).dokumentTyp ?? 'rechnung',
     })
 
     // 9. Update status to processing
@@ -228,12 +229,13 @@ export class DokumenteService {
     await this.repo.updateStatus(id, 'pending')
 
     const jobId = await enqueueExtraction({
-      dokumentId: id,
-      tenantId:   ctx.tenantId,
-      s3Key:      dok.s3Key,
-      mimeType:   dok.mimeType,
-      zeitraumId: dok.zeitraumId ?? undefined,
-      attempt:    0,
+      dokumentId:  id,
+      tenantId:    ctx.tenantId,
+      s3Key:       dok.s3Key,
+      mimeType:    dok.mimeType,
+      zeitraumId:  dok.zeitraumId ?? undefined,
+      attempt:     0,
+      dokumentTyp: (dok as any).dokumentTyp ?? 'rechnung',
     })
 
     await writeAudit({

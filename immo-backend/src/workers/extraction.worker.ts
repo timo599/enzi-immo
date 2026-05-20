@@ -12,6 +12,8 @@ import { Worker, type Job } from 'bullmq'
 import { PrismaClient } from '@prisma/client'
 import { downloadFile }          from '../lib/storage/storage.service.js'
 import { extractFromDocument, ExtractionParseError } from '../lib/extraction/claude.extraction.service.js'
+import { extractMietvertragFromDocument }             from '../lib/extraction/mietvertrag.extraction.service.js'
+import { extractNkAbrechnungFromDocument }            from '../lib/extraction/nk-abrechnung.extraction.service.js'
 import { getRedisConnection, closeQueues } from '../lib/queue/queue.service.js'
 import { EXTRACTION_QUEUE, EXTRACTION_DLQ, QUEUE_CONFIG, type ExtractionJobData, type ExtractionJobResult } from '../lib/queue/queue.types.js'
 import { Queue } from 'bullmq'
@@ -73,11 +75,18 @@ async function processExtractionJob(
 
   await job.updateProgress(30)
 
-  // 3. Call Claude API
+  // 3. Call Claude API – Dokumenttyp-abhängiger Pfad
   let extraction
+  const dokumentTyp = job.data.dokumentTyp ?? 'rechnung'
   try {
     const originalName = s3Key.split('/').pop() ?? 'document'
-    extraction = await extractFromDocument(fileBuffer, mimeType, originalName)
+    if (dokumentTyp === 'mietvertrag') {
+      extraction = await extractMietvertragFromDocument(fileBuffer, mimeType, originalName)
+    } else if (dokumentTyp === 'lernmodus_nk') {
+      extraction = await extractNkAbrechnungFromDocument(fileBuffer, mimeType, originalName)
+    } else {
+      extraction = await extractFromDocument(fileBuffer, mimeType, originalName)
+    }
     log.info(
       { dokumentId, flags: extraction.flags, needsReview: extraction.needsReview },
       'Claude extraction complete',
