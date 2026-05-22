@@ -32,6 +32,7 @@ import jwtPlugin from './plugins/jwt.js'
 import errorHandlerPlugin from './plugins/error-handler.js'
 
 import { authRoutes }               from './modules/auth/routes/auth.routes.js'
+import { usersRoutes }              from './modules/auth/routes/users.routes.js'
 import { firmenRoutes }             from './modules/firmen/firmen.routes.js'
 import { objekteRoutes }            from './modules/objekte/routes/objekte.routes.js'
 import { einheitenRoutes }          from './modules/einheiten/routes/einheiten.routes.js'
@@ -115,6 +116,7 @@ async function buildApp() {
 
   const API = '/api/v1'
   await app.register(authRoutes,                     { prefix: `${API}/auth` })
+  await app.register(usersRoutes,                    { prefix: `${API}/auth` })
   await app.register(firmenRoutes,                   { prefix: `${API}/firmen` })
   await app.register(objekteRoutes,                  { prefix: `${API}/objekte` })
   await app.register(einheitenRoutes,                { prefix: `${API}/einheiten` })

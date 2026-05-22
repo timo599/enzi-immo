@@ -41,6 +41,22 @@ export const authApi = {
     api.post<{ data: { accessToken: string; user: { id: string; email: string; vorname?: string; nachname?: string; rolle: string } } }>('/auth/login', { email, password }),
 }
 
+// ── User-Management ───────────────────────────────────────────────────────────
+export type UserRolle = 'admin' | 'verwalter' | 'assistent' | 'eigentuemer_readonly'
+export const usersApi = {
+  list:   () => api.get<{ data: Array<{ id: string; email: string; vorname?: string; nachname?: string; rolle: UserRolle; aktiv: boolean; letzterLogin?: string; erstelltAm: string }> }>('/auth/users'),
+  create: (body: { email: string; password: string; vorname?: string; nachname?: string; rolle?: UserRolle }) =>
+    api.post('/auth/users', body),
+  update: (id: string, body: { vorname?: string; nachname?: string; rolle?: UserRolle; password?: string; aktiv?: boolean }) =>
+    api.patch(`/auth/users/${id}`, body),
+  remove: (id: string) => api.delete(`/auth/users/${id}`),
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+export const exportApi2 = {
+  mieterliste: () => api.get('/exporte/mieterliste', { responseType: 'blob' }),
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 export const dashboardApi = {
   kpis:     (objektId?: string) => api.get('/dashboard/kpis',     { params: { objektId } }),

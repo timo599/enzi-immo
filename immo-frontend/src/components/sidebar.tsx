@@ -18,6 +18,7 @@ import {
   LogOut,
   ChevronRight,
   Brain,
+  Settings,
 } from 'lucide-react'
 import { QuickSearch } from './quick-search'
 
@@ -33,6 +34,7 @@ const NAV = [
   { href: '/kontoauszuege',   label: 'Kontoauszüge',     icon: CreditCard },
   { href: '/mieterhoehungen', label: 'Mieterhöhungen',   icon: TrendingUp },
   { href: '/lernmodus',       label: 'Lernmodus',         icon: Brain },
+  { href: '/einstellungen',   label: 'Einstellungen',     icon: Settings },
 ]
 
 export function Sidebar() {

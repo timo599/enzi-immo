@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { ExportService } from '../services/export.service.js'
+import { erstelleMieterlisteExcel } from '../services/mieterliste.service.js'
 
 const UuidParam   = z.object({ id: z.string().uuid() })
 const ListQuery   = z.object({ referenzId: z.string().uuid().optional() })
@@ -30,5 +31,16 @@ export const exportRoutes: FastifyPluginAsync = async (fastify) => {
     const { referenzId } = ListQuery.parse(req.query)
     const result = await service.listExporte(ctx(req), referenzId)
     return reply.send(result)
+  })
+
+  /** GET /exporte/mieterliste — Excel-Download Mieterliste */
+  fastify.get('/mieterliste', { ...auth }, async (req, reply) => {
+    const buffer = await erstelleMieterlisteExcel(fastify.prisma, req.tenantId)
+    const datum  = new Date().toISOString().slice(0, 10)
+    reply
+      .header('Content-Type',        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      .header('Content-Disposition', `attachment; filename="Mieterliste_${datum}.xlsx"`)
+      .header('Content-Length',      String(buffer.length))
+    return reply.send(buffer)
   })
 }

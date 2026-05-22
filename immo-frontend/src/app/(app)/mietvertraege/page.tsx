@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { mietvertraegeApi, einheitenApi, mieterApi } from '@/lib/api'
+import { mietvertraegeApi, einheitenApi, mieterApi, exportApi2 } from '@/lib/api'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,7 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { euro, datum } from '@/lib/format'
-import { Plus, FileText, CalendarDays, FolderOpen, User, Info } from 'lucide-react'
+import { Plus, FileText, CalendarDays, FolderOpen, User, Info, Download } from 'lucide-react'
 import { DocumentSection } from '@/components/document-section'
 
 interface Vertrag {
@@ -37,6 +37,26 @@ export default function MietvertraegePage() {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(defaultForm)
   const [selected, setSelected] = useState<Vertrag | null>(null)
+  const [xlsxLoading, setXlsxLoading] = useState(false)
+
+  async function downloadMieterliste() {
+    setXlsxLoading(true)
+    try {
+      const res = await exportApi2.mieterliste()
+      const url = URL.createObjectURL(new Blob([res.data as BlobPart], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Mieterliste_${new Date().toISOString().slice(0, 10)}.xlsx`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error('Excel-Export fehlgeschlagen')
+    } finally {
+      setXlsxLoading(false)
+    }
+  }
 
   const { data, isLoading } = useQuery({ queryKey: ['mietvertraege'], queryFn: () => mietvertraegeApi.list() })
   const { data: einData } = useQuery({ queryKey: ['einheiten'], queryFn: () => einheitenApi.list() })
@@ -87,7 +107,15 @@ export default function MietvertraegePage() {
       <PageHeader
         title="Mietverträge"
         description="Alle aktiven und historischen Mietverträge"
-        action={<Button onClick={() => { setForm(defaultForm); setOpen(true) }}><Plus className="h-4 w-4 mr-1" />Neuer Vertrag</Button>}
+        action={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={downloadMieterliste} disabled={xlsxLoading}>
+              <Download className="h-4 w-4 mr-1" />
+              {xlsxLoading ? 'Erstelle…' : 'Mieterliste Excel'}
+            </Button>
+            <Button onClick={() => { setForm(defaultForm); setOpen(true) }}><Plus className="h-4 w-4 mr-1" />Neuer Vertrag</Button>
+          </div>
+        }
       />
 
       {isLoading ? (
