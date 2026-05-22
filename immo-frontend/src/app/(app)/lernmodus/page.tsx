@@ -213,10 +213,12 @@ export default function LernmodusPage() {
           <CardContent>
             <UploadQueue
               files={uploadFiles}
-              uploadFn={async (file) => {
+              uploadFn={async (file, onProgress) => {
                 const fd = new FormData()
                 fd.append('file', file)
+                onProgress(10)
                 const res = await lernmodusApi.upload(fd)
+                onProgress(100)
                 const sessionId = (res as any).data.data.sessionId as string
                 setActiveSession(sessionId)
                 return { id: sessionId }

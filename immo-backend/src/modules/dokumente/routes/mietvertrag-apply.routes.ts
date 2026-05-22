@@ -53,24 +53,28 @@ export const mietvertragApplyRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     // Mieter suchen oder anlegen
-    let mieter = null
-    if (m['nachname']) {
-      mieter = await prisma.mieter.findFirst({
-        where: {
-          tenantId,
-          nachname: { equals: String(m['nachname']), mode: 'insensitive' },
-          ...(m['vorname'] ? { vorname: { equals: String(m['vorname']), mode: 'insensitive' } } : {}),
-        },
+    const nachname = m['nachname'] ? String(m['nachname']).trim() : ''
+    if (!nachname) {
+      return reply.status(422).send({
+        error: 'Mieter-Nachname konnte nicht aus dem Dokument extrahiert werden. Bitte Mietvertrag manuell anlegen.',
       })
     }
+
+    let mieter = await prisma.mieter.findFirst({
+      where: {
+        tenantId,
+        nachname: { equals: nachname, mode: 'insensitive' },
+        ...(m['vorname'] ? { vorname: { equals: String(m['vorname']), mode: 'insensitive' } } : {}),
+      },
+    })
 
     const mieterNeu = !mieter
     if (!mieter) {
       mieter = await prisma.mieter.create({
         data: {
           tenantId,
-          vorname:  String(m['vorname'] ?? ''),
-          nachname: String(m['nachname'] ?? ''),
+          vorname:  m['vorname'] ? String(m['vorname']).trim() : '',
+          nachname,
           strasse:  m['strasse'] ? String(m['strasse']) : null,
           plz:      m['plz']     ? String(m['plz'])     : null,
           stadt:    m['stadt']   ? String(m['stadt'])   : null,
@@ -78,17 +82,21 @@ export const mietvertragApplyRoutes: FastifyPluginAsync = async (fastify) => {
       })
     }
 
+    // Vertragsbeginn: warnen wenn nicht extrahiert
+    const vertragsbeginnFehlt = !v['vertragsbeginn']
+    const vertragsbeginn = vertragsbeginnFehlt ? new Date() : new Date(String(v['vertragsbeginn']))
+
     // Mietvertrag anlegen
     const mietvertrag = await prisma.mietvertrag.create({
       data: {
         tenantId,
         einheitId:       body.einheitId,
         mietart:         'wohnraum',
-        vertragsbeginn:  v['vertragsbeginn'] ? new Date(String(v['vertragsbeginn'])) : new Date(),
-        vertragsende:    v['vertragsende']   ? new Date(String(v['vertragsende']))   : null,
-        nettomiete:      v['nettomiete']     ? Number(v['nettomiete'])     : 0,
+        vertragsbeginn,
+        vertragsende:    v['vertragsende']      ? new Date(String(v['vertragsende']))   : null,
+        nettomiete:      v['nettomiete']        ? Number(v['nettomiete'])     : 0,
         nkVorauszahlung: v['nk_vorauszahlung'] ? Number(v['nk_vorauszahlung']) : 0,
-        kaution:         v['kaution']        ? Number(v['kaution'])        : 0,
+        kaution:         v['kaution']           ? Number(v['kaution'])        : 0,
         erstelltVon:     userId,
       },
     })
@@ -113,10 +121,11 @@ export const mietvertragApplyRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     return reply.send({ data: {
-      mieterId:      mieter.id,
-      mietvertragId: mietvertrag.id,
+      mieterId:            mieter.id,
+      mietvertragId:       mietvertrag.id,
       mieterNeu,
-      vertragNeu:    true,
+      vertragNeu:          true,
+      warnungen:           vertragsbeginnFehlt ? ['Vertragsbeginn nicht extrahiert – heute gesetzt. Bitte manuell korrigieren.'] : [],
     }})
   })
 }

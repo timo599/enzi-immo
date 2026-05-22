@@ -34,7 +34,7 @@ Antworte NUR mit einem validen JSON-Objekt:
     {
       "bezeichnung": "String",
       "gesamtbetrag": Zahl oder null,
-      "schluessel_verwendet": "wohnflaeche" | "personenzahl" | "gleiche_teile" | "verbrauchsmessung" | null
+      "schluessel_verwendet": "wohnflaeche" | "personenanzahl" | "gesamtflaeche" | "gleiche_teile" | "verbrauchsmessung" | "miteigentumsanteile" | null
     }
   ],
   "gesamt_betrag": Zahl oder null,

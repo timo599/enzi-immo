@@ -179,6 +179,16 @@ export const lernmodusRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     await prisma.lernmodusFrage.deleteMany({ where: { sessionId: id } })
+
+    // Wenn keine Fragen generiert werden konnten → direkt abschließen
+    if (fragenData.length === 0) {
+      await prisma.lernmodusSession.update({
+        where: { id },
+        data:  { status: 'abgeschlossen', rohDaten: rohDaten as object },
+      })
+      return reply.send({ data: { fragen: [], anzahl: 0, hinweis: 'Keine auswertbaren Daten gefunden – Session automatisch abgeschlossen.' } })
+    }
+
     const fragen = await prisma.$transaction(
       fragenData.map((f) => prisma.lernmodusFrage.create({ data: f }))
     )
@@ -227,7 +237,14 @@ export const lernmodusRoutes: FastifyPluginAsync = async (fastify) => {
     let aktualisierteEinheiten = 0
     let neueKostenartRegeln    = 0
 
-    const VALID_SCHLUESSEL = ['wohnflaeche', 'personenzahl', 'gleiche_teile', 'verbrauchsmessung', 'miteigentumsanteile']
+    // Alle gültigen Enum-Werte aus dem Prisma-Schema
+    const VALID_SCHLUESSEL = ['wohnflaeche', 'gesamtflaeche', 'personenanzahl', 'gleiche_teile', 'verbrauchsmessung', 'miteigentumsanteile']
+
+    // Alle Kostenarten vorab laden für Kuerzel-Lookup per Bezeichnung
+    const alleKostenarten = await prisma.kostenart.findMany({
+      where:  { tenantId },
+      select: { kuerzel: true, bezeichnung: true },
+    })
 
     await prisma.$transaction(async (tx) => {
       for (const frage of bestaetigte) {
@@ -252,9 +269,16 @@ export const lernmodusRoutes: FastifyPluginAsync = async (fastify) => {
         if (frage.frageTyp === 'kostenart_schluessel' && frage.antwortWert && frage.vorschlagWert) {
           const schluessel = frage.vorschlagWert
           if (VALID_SCHLUESSEL.includes(schluessel)) {
-            // Kostenart-Bezeichnung aus fragentext extrahieren
-            const match = frage.fragentext.match(/^"([^"]+)"/)
-            const kuerzel = match?.[1] ?? frage.fragentext.split('"')[1] ?? 'UNBEKANNT'
+            // Bezeichnung aus fragentext extrahieren, dann per DB-Lookup auf Kuerzel mappen
+            const matchText = frage.fragentext.match(/^"([^"]+)"/)
+            const bezeichnung = matchText?.[1] ?? ''
+            const kaMatch = alleKostenarten.find(
+              (k: { kuerzel: string; bezeichnung: string }) =>
+                k.bezeichnung.toLowerCase() === bezeichnung.toLowerCase() ||
+                k.kuerzel.toLowerCase() === bezeichnung.toLowerCase()
+            )
+            const fallback = bezeichnung.toUpperCase().replace(/\s+/g, '_').slice(0, 30) || 'UNBEKANNT'
+            const kuerzel = kaMatch?.kuerzel ?? fallback
             await tx.kostenartLernwissen.upsert({
               where:  { tenantId_kostenartKuerzel: { tenantId, kostenartKuerzel: kuerzel } },
               create: { tenantId, kostenartKuerzel: kuerzel, bevorzugterSchluessel: schluessel as any, quelleSessionId: id },
