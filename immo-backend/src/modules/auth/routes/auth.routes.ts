@@ -58,8 +58,8 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
   })
 
   /**
-   * POST /auth/reset-password — setzt Passwort ohne Login (nur mit RESET_SECRET)
-   * Body: { email, newPassword }
+   * POST /auth/reset-password — setzt Passwort + E-Mail ohne Login (nur mit RESET_SECRET)
+   * Body: { userId, newPassword, newEmail? }
    */
   fastify.post('/reset-password', async (request, reply) => {
     const secret = process.env['RESET_SECRET']
@@ -68,17 +68,22 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.status(403).send({ error: 'Forbidden' })
     }
     const body = z.object({
-      email:       z.string().email(),
+      userId:      z.string(),
       newPassword: z.string().min(8),
+      newEmail:    z.string().email().optional(),
     }).parse(request.body)
 
-    const user = await fastify.prisma.user.findFirst({ where: { email: body.email } })
+    const user = await fastify.prisma.user.findFirst({ where: { id: body.userId } })
     if (!user) return reply.status(404).send({ error: 'Benutzer nicht gefunden' })
 
     await fastify.prisma.user.update({
       where: { id: user.id },
-      data:  { passwordHash: hashPassword(body.newPassword), aktiv: true },
+      data:  {
+        passwordHash: hashPassword(body.newPassword),
+        aktiv:        true,
+        ...(body.newEmail ? { email: body.newEmail } : {}),
+      },
     })
-    return reply.send({ data: { ok: true, email: user.email, message: 'Passwort wurde zurückgesetzt' } })
+    return reply.send({ data: { ok: true, userId: user.id, message: 'Passwort und E-Mail wurden aktualisiert' } })
   })
 }
