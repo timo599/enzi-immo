@@ -86,4 +86,65 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
 
     return reply.send({ data })
   })
+
+  /** GET /dashboard/leerstand — leere Einheiten mit Kostenkalkulation */
+  fastify.get('/leerstand', auth, async (req, reply) => {
+    const heute = new Date()
+
+    const einheiten = await fastify.prisma.einheit.findMany({
+      where: { tenantId: req.tenantId, deletedAt: null, aktiv: true },
+      include: {
+        objekt: { select: { bezeichnung: true, strasse: true, hausnummer: true } },
+        mietvertraege: {
+          where: { deletedAt: null },
+          orderBy: { vertragsbeginn: 'desc' },
+          take: 5,
+          include: {
+            mietvertragMieter: {
+              where: { bis: null },
+              include: { mieter: { select: { vorname: true, nachname: true } } },
+              take: 1,
+            },
+          },
+        },
+      },
+    })
+
+    const leer = einheiten.filter(e => {
+      const aktiv = e.mietvertraege.find(mv =>
+        new Date(mv.vertragsbeginn) <= heute &&
+        (!mv.vertragsende || new Date(mv.vertragsende) >= heute)
+      )
+      return !aktiv
+    })
+
+    const data = leer.map(e => {
+      // Letzten MV ermitteln um Leerstand-Beginn zu schätzen
+      const letzterMv = e.mietvertraege[0]
+      const leerstandSeit = letzterMv?.vertragsende
+        ? new Date(letzterMv.vertragsende)
+        : new Date(e.erstelltAm)
+      const tage = Math.floor((heute.getTime() - leerstandSeit.getTime()) / (1000 * 60 * 60 * 24))
+
+      // Entgangene Miete: letzte Nettomiete als Basis
+      const letzteNettomiete = letzterMv ? Number(letzterMv.nettomiete) : 0
+      const entgangeneEinnahmen = letzteNettomiete > 0
+        ? Math.round((tage / 30) * letzteNettomiete * 100) / 100
+        : null
+
+      return {
+        einheitId:           e.id,
+        bezeichnung:         e.bezeichnung,
+        objekt:              e.objekt.bezeichnung,
+        adresse:             `${e.objekt.strasse} ${e.objekt.hausnummer}`,
+        m2:                  e.wohnflaecheM2 ? Number(e.wohnflaecheM2) : null,
+        leerstandSeit:       leerstandSeit.toISOString().slice(0, 10),
+        tage,
+        letzteNettomiete,
+        entgangeneEinnahmen,
+      }
+    })
+
+    return reply.send({ data })
+  })
 }

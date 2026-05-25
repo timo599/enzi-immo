@@ -60,6 +60,9 @@ import { lernmodusRoutes }      from './modules/lernmodus/lernmodus.routes.js'
 import { mietvertragApplyRoutes } from './modules/dokumente/routes/mietvertrag-apply.routes.js'
 import { kommunikationRoutes }    from './modules/kommunikation/kommunikation.routes.js'
 import { reparaturRoutes }        from './modules/reparatur/reparatur.routes.js'
+import { wartungRoutes }          from './modules/wartung/wartung.routes.js'
+import { uebergabeRoutes }        from './modules/uebergabe/uebergabe.routes.js'
+import { kautionRoutes }          from './modules/kaution/kaution.routes.js'
 
 const MAX_UPLOAD_BYTES = 26 * 1024 * 1024
 
@@ -146,6 +149,9 @@ async function buildApp() {
   await app.register(mietvertragApplyRoutes,          { prefix: `${API}/dokumente` })
   await app.register(kommunikationRoutes,             { prefix: `${API}/kommunikation` })
   await app.register(reparaturRoutes,                 { prefix: `${API}/reparaturen` })
+  await app.register(wartungRoutes,                   { prefix: `${API}/wartung` })
+  await app.register(uebergabeRoutes,                 { prefix: `${API}/uebergabe` })
+  await app.register(kautionRoutes,                   { prefix: `${API}/kaution` })
 
   return app
 }

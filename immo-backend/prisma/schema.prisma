@@ -198,6 +198,9 @@ model Tenant {
   kostenartLernwissen   KostenartLernwissen[]
   kommunikationen       Kommunikation[]
   reparaturen           Reparatur[]
+  wartungsaufgaben      Wartungsaufgabe[]
+  uebergabeprotokolle   Uebergabeprotokoll[]
+  kautionen             Kaution[]
 
   @@map("tenants")
 }
@@ -280,6 +283,7 @@ model Objekt {
   zaehler               Zaehler[]
   dokumente             Dokument[]
   reparaturen           Reparatur[]
+  wartungsaufgaben      Wartungsaufgabe[]
 
   @@index([tenantId])
   @@map("objekte")
@@ -310,8 +314,10 @@ model Einheit {
   dokumente       Dokument[]
   lernmodusFragen LernmodusFrage[]
   lernwissen      EinheitLernwissen?
-  reparaturen     Reparatur[]
-  kommunikationen Kommunikation[]
+  reparaturen         Reparatur[]
+  kommunikationen     Kommunikation[]
+  wartungsaufgaben    Wartungsaufgabe[]
+  uebergabeprotokolle Uebergabeprotokoll[]
 
   @@index([objektId])
   @@index([tenantId])
@@ -379,8 +385,10 @@ model Mietvertrag {
   nkAbrechnungen     NkAbrechnung[]
   matchingErgebnisse MatchingErgebnis[]
   offenePosten       OffenerPosten[]
-  mieterhoehungen    Mieterhoehung[]
-  dokumente          Dokument[]
+  mieterhoehungen     Mieterhoehung[]
+  dokumente           Dokument[]
+  kautionEintrag      Kaution?
+  uebergabeprotokolle Uebergabeprotokoll[]
 
   @@index([einheitId])
   @@index([tenantId])
@@ -1089,4 +1097,83 @@ model Reparatur {
   @@index([einheitId])
   @@index([objektId])
   @@map("reparaturen")
+}
+
+// ── WARTUNGSPLAN ─────────────────────────────────────────────
+
+model Wartungsaufgabe {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String    @map("tenant_id") @db.Uuid
+  objektId          String?   @map("objekt_id") @db.Uuid
+  einheitId         String?   @map("einheit_id") @db.Uuid
+  titel             String
+  beschreibung      String?
+  intervallMonate   Int       @map("intervall_monate")
+  letzteAusfuehrung DateTime? @map("letzte_ausfuehrung") @db.Date
+  naechstFaellig    DateTime? @map("naechst_faellig") @db.Date
+  aktiv             Boolean   @default(true)
+  erstelltAm        DateTime  @default(now()) @map("erstellt_am")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  objekt   Objekt?  @relation(fields: [objektId], references: [id])
+  einheit  Einheit? @relation(fields: [einheitId], references: [id])
+
+  @@index([tenantId])
+  @@map("wartungsaufgaben")
+}
+
+// ── ÜBERGABEPROTOKOLL ────────────────────────────────────────
+
+enum UebergabeTyp {
+  einzug
+  auszug
+}
+
+model Uebergabeprotokoll {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String       @map("tenant_id") @db.Uuid
+  einheitId     String       @map("einheit_id") @db.Uuid
+  mietvertragId String?      @map("mietvertrag_id") @db.Uuid
+  typ           UebergabeTyp
+  datum         DateTime     @db.Date
+  zaehlerstandStrom  Decimal? @map("zaehlerstand_strom") @db.Decimal(10, 3)
+  zaehlerstandGas    Decimal? @map("zaehlerstand_gas") @db.Decimal(10, 3)
+  zaehlerstandWasser Decimal? @map("zaehlerstand_wasser") @db.Decimal(10, 3)
+  schluessel    Int?
+  raeume        Json         @default("[]")
+  notizen       String?
+  erstelltAm    DateTime     @default(now()) @map("erstellt_am")
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  einheit     Einheit     @relation(fields: [einheitId], references: [id])
+  mietvertrag Mietvertrag? @relation(fields: [mietvertragId], references: [id])
+
+  @@index([tenantId])
+  @@index([einheitId])
+  @@map("uebergabeprotokolle")
+}
+
+// ── KAUTIONSVERWALTUNG ───────────────────────────────────────
+
+model Kaution {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  mietvertragId   String    @unique @map("mietvertrag_id") @db.Uuid
+  betrag          Decimal   @db.Decimal(10, 2)
+  erhaltenAm      DateTime? @map("erhalten_am") @db.Date
+  konto           String?
+  zinsen          Decimal?  @db.Decimal(10, 2)
+  rueckgabeAm     DateTime? @map("rueckgabe_am") @db.Date
+  rueckgabeBetrag Decimal?  @map("rueckgabe_betrag") @db.Decimal(10, 2)
+  abzuege         Decimal?  @default(0) @db.Decimal(10, 2)
+  abzuegeGrund    String?   @map("abzuege_grund")
+  notizen         String?
+  erstelltAm      DateTime  @default(now()) @map("erstellt_am")
+  geaendertAm     DateTime? @updatedAt @map("geaendert_am")
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  mietvertrag Mietvertrag @relation(fields: [mietvertragId], references: [id])
+
+  @@index([tenantId])
+  @@map("kautionen")
 }
