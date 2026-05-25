@@ -196,6 +196,8 @@ model Tenant {
   lernmodusSessionen    LernmodusSession[]
   einheitLernwissen     EinheitLernwissen[]
   kostenartLernwissen   KostenartLernwissen[]
+  kommunikationen       Kommunikation[]
+  reparaturen           Reparatur[]
 
   @@map("tenants")
 }
@@ -277,6 +279,7 @@ model Objekt {
   bankkontoObjekte      BankkontoObjekt[]
   zaehler               Zaehler[]
   dokumente             Dokument[]
+  reparaturen           Reparatur[]
 
   @@index([tenantId])
   @@map("objekte")
@@ -307,6 +310,8 @@ model Einheit {
   dokumente       Dokument[]
   lernmodusFragen LernmodusFrage[]
   lernwissen      EinheitLernwissen?
+  reparaturen     Reparatur[]
+  kommunikationen Kommunikation[]
 
   @@index([objektId])
   @@index([tenantId])
@@ -337,6 +342,7 @@ model Mieter {
   tenant            Tenant              @relation(fields: [tenantId], references: [id])
   mietvertragMieter MietvertragMieter[]
   dokumente         Dokument[]
+  kommunikationen   Kommunikation[]
 
   @@index([tenantId])
   @@map("mieter")
@@ -1020,4 +1026,67 @@ model KostenartLernwissen {
   @@unique([tenantId, kostenartKuerzel])
   @@index([tenantId])
   @@map("kostenart_lernwissen")
+}
+
+// ── KOMMUNIKATIONS-LOG ───────────────────────────────────────
+
+enum KommunikationKategorie {
+  anruf
+  brief
+  email
+  vor_ort
+  sonstiges
+}
+
+model Kommunikation {
+  id          String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String                  @map("tenant_id") @db.Uuid
+  mieterId    String?                 @map("mieter_id") @db.Uuid
+  einheitId   String?                 @map("einheit_id") @db.Uuid
+  datum       DateTime                @db.Date
+  kategorie   KommunikationKategorie  @default(sonstiges)
+  betreff     String?
+  text        String
+  erstelltAm  DateTime                @default(now()) @map("erstellt_am")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  mieter   Mieter?  @relation(fields: [mieterId], references: [id])
+  einheit  Einheit? @relation(fields: [einheitId], references: [id])
+
+  @@index([tenantId])
+  @@index([mieterId])
+  @@index([einheitId])
+  @@map("kommunikation")
+}
+
+// ── REPARATUR-TRACKER ────────────────────────────────────────
+
+enum ReparaturStatus {
+  offen
+  in_bearbeitung
+  erledigt
+}
+
+model Reparatur {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String          @map("tenant_id") @db.Uuid
+  einheitId    String?         @map("einheit_id") @db.Uuid
+  objektId     String?         @map("objekt_id") @db.Uuid
+  titel        String
+  beschreibung String?
+  status       ReparaturStatus @default(offen)
+  kosten       Decimal?        @db.Decimal(10, 2)
+  datum        DateTime        @db.Date
+  erledigtAm   DateTime?       @map("erledigt_am") @db.Date
+  handwerker   String?
+  erstelltAm   DateTime        @default(now()) @map("erstellt_am")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  einheit  Einheit? @relation(fields: [einheitId], references: [id])
+  objekt   Objekt?  @relation(fields: [objektId], references: [id])
+
+  @@index([tenantId])
+  @@index([einheitId])
+  @@index([objektId])
+  @@map("reparaturen")
 }

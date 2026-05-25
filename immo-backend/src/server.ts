@@ -58,6 +58,8 @@ import { kostenartenRoutes }    from './modules/kostenarten/kostenarten.routes.j
 import { enziRoutes }           from './modules/enzi/enzi.routes.js'
 import { lernmodusRoutes }      from './modules/lernmodus/lernmodus.routes.js'
 import { mietvertragApplyRoutes } from './modules/dokumente/routes/mietvertrag-apply.routes.js'
+import { kommunikationRoutes }    from './modules/kommunikation/kommunikation.routes.js'
+import { reparaturRoutes }        from './modules/reparatur/reparatur.routes.js'
 
 const MAX_UPLOAD_BYTES = 26 * 1024 * 1024
 
@@ -142,6 +144,8 @@ async function buildApp() {
   await app.register(enziRoutes,                      { prefix: `${API}/enzi` })
   await app.register(lernmodusRoutes,                 { prefix: `${API}/lernmodus` })
   await app.register(mietvertragApplyRoutes,          { prefix: `${API}/dokumente` })
+  await app.register(kommunikationRoutes,             { prefix: `${API}/kommunikation` })
+  await app.register(reparaturRoutes,                 { prefix: `${API}/reparaturen` })
 
   return app
 }

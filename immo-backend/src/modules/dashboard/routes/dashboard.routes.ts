@@ -35,4 +35,55 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
     const result = await service.getAmpel(ctx(req))
     return reply.send(result)
   })
+
+  /** GET /dashboard/auslaufende-vertraege?tage=90 */
+  fastify.get('/auslaufende-vertraege', auth, async (req, reply) => {
+    const { tage } = z.object({ tage: z.coerce.number().int().min(1).max(365).default(90) })
+      .parse(req.query)
+
+    const heute = new Date()
+    const bis   = new Date(heute)
+    bis.setDate(bis.getDate() + tage)
+
+    const vertraege = await fastify.prisma.mietvertrag.findMany({
+      where: {
+        tenantId:    req.tenantId,
+        deletedAt:   null,
+        vertragsende: { gte: heute, lte: bis },
+      },
+      include: {
+        einheit: {
+          select: {
+            bezeichnung: true,
+            objekt: { select: { bezeichnung: true, strasse: true, hausnummer: true } },
+          },
+        },
+        mietvertragMieter: {
+          where: { bis: null },
+          include: { mieter: { select: { vorname: true, nachname: true } } },
+          take: 1,
+          orderBy: { seit: 'desc' },
+        },
+      },
+      orderBy: { vertragsende: 'asc' },
+    })
+
+    const data = vertraege.map(v => {
+      const diffMs   = new Date(v.vertragsende!).getTime() - heute.getTime()
+      const restTage = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+      const mieter   = v.mietvertragMieter[0]?.mieter
+      return {
+        id:           v.id,
+        einheit:      v.einheit.bezeichnung,
+        objekt:       v.einheit.objekt.bezeichnung,
+        adresse:      `${v.einheit.objekt.strasse} ${v.einheit.objekt.hausnummer}`,
+        mieter:       mieter ? [mieter.vorname, mieter.nachname].filter(Boolean).join(' ') : '—',
+        vertragsende: v.vertragsende!.toISOString().slice(0, 10),
+        restTage,
+        nettomiete:   Number(v.nettomiete),
+      }
+    })
+
+    return reply.send({ data })
+  })
 }
