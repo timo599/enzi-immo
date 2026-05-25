@@ -27,19 +27,42 @@ export default function LoginPage() {
       setAuth(res.data.data.accessToken, res.data.data.user)
       router.push('/dashboard')
     } catch (err) {
-      // Netzwerkfehler = Server schläft → Retry mit Hinweis
+      // Netzwerkfehler = Server schläft → ping + mehrere Retries
       if (axios.isAxiosError(err) && !err.response) {
         setWakingUp(true)
-        toast.info('Server wird gestartet, bitte warten…')
-        // 35 Sek warten dann nochmals versuchen
-        await new Promise(r => setTimeout(r, 35000))
+        toast.info('Server wird gestartet, bitte warten… (bis 60 Sek)')
+
+        // Ping /health alle 5s bis der Server antwortet, max 65s
+        let woke = false
+        for (let i = 0; i < 13; i++) {
+          await new Promise(r => setTimeout(r, 5000))
+          try {
+            await axios.get('/api/v1/../health', { timeout: 4000 })
+            woke = true
+            break
+          } catch { /* noch nicht wach */ }
+        }
+
         setWakingUp(false)
-        try {
-          const res2 = await authApi.login(email, password)
-          setAuth(res2.data.data.accessToken, res2.data.data.user)
-          router.push('/dashboard')
-          return
-        } catch { /* zeige Fehler unten */ }
+        if (woke) {
+          try {
+            const res2 = await authApi.login(email, password)
+            setAuth(res2.data.data.accessToken, res2.data.data.user)
+            router.push('/dashboard')
+            return
+          } catch (err2) {
+            const s = axios.isAxiosError(err2) ? err2.response?.status : null
+            if (s === 401 || s === 400) {
+              toast.error('Benutzername oder Passwort falsch.')
+            } else {
+              toast.error('Verbindungsfehler – bitte nochmals versuchen.')
+            }
+          }
+        } else {
+          toast.error('Server antwortet nicht. Bitte in 1 Minute nochmals versuchen.')
+        }
+        setLoading(false)
+        return
       }
       const status = axios.isAxiosError(err) ? err.response?.status : null
       if (status === 401 || status === 400) {
@@ -103,7 +126,7 @@ export default function LoginPage() {
               </Button>
               {wakingUp && (
                 <p className="text-center text-xs text-muted-foreground animate-pulse">
-                  Erster Start dauert ca. 30 Sekunden…
+                  Server startet… bitte nicht schließen (ca. 30–60 Sek.)
                 </p>
               )}
             </form>

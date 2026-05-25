@@ -2,6 +2,25 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Safe-area Utilities für iPhone-Notch / Home-Indikator */
+.safe-area-pb {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+/* Mobile: inputs größer damit iOS nicht hineinzoomt */
+@media (max-width: 640px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Touch-freundliche Tap-Targets – nur für primäre Action-Buttons */
+@media (max-width: 640px) {
+  .btn-touch {
+    min-height: 44px;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
