@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, Building2, FileText, Users, MoreHorizontal,
   Home, Receipt, CreditCard, TrendingUp, FolderOpen, Brain,
-  Settings, Briefcase, X, List,
+  Settings, Briefcase, X, List, CalendarClock, Wrench,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -25,6 +25,8 @@ const MORE_NAV = [
   { href: '/kontoauszuege',   label: 'Kontoauszüge',     icon: CreditCard },
   { href: '/mieterhoehungen', label: 'Mieterhöhungen',   icon: TrendingUp },
   { href: '/mieterliste',     label: 'Mieterliste',       icon: List },
+  { href: '/fristen',         label: 'Fristen',           icon: CalendarClock },
+  { href: '/reparaturen',     label: 'Reparaturen',       icon: Wrench },
   { href: '/lernmodus',       label: 'Lernmodus',         icon: Brain },
   { href: '/einstellungen',   label: 'Einstellungen',     icon: Settings },
 ]

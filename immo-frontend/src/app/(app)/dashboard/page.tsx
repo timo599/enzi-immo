@@ -1,15 +1,20 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { dashboardApi } from '@/lib/api'
+import { dashboardApi, api } from '@/lib/api'
 import { euro, prozent, datum } from '@/lib/format'
 import { PageHeader } from '@/components/page-header'
 import { StatCard } from '@/components/stat-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Building2, Home, Users, AlertTriangle, FileText, Euro } from 'lucide-react'
+import { Building2, Home, Users, AlertTriangle, FileText, Euro, CalendarClock } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+
+interface AuslaufenderVertrag {
+  id: string; einheit: string; objekt: string; adresse: string
+  mieter: string; vertragsende: string; restTage: number; nettomiete: number
+}
 
 export default function DashboardPage() {
   const { data: kpisRes, isLoading: kpisLoading } = useQuery({
@@ -25,8 +30,15 @@ export default function DashboardPage() {
     queryFn: () => dashboardApi.ampel(),
   })
 
+  const { data: auslaufendRes } = useQuery({
+    queryKey: ['dashboard-auslaufende'],
+    queryFn: () => api.get<{ data: AuslaufenderVertrag[] }>('/dashboard/auslaufende-vertraege?tage=90')
+      .then(r => r.data.data),
+  })
+
   const kpis = kpisRes?.data?.data
   const cashflow: { monat: string; soll: number; ist: number }[] = cashflowRes?.data?.data ?? []
+  const auslaufend: AuslaufenderVertrag[] = auslaufendRes ?? []
   const ampel: {
     id: string; einheit: string; mieter: string; aktuelleMiete: number
     neueMiete: number | null; naechstmoeglichesDatum: string
@@ -136,6 +148,41 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Auslaufende Verträge */}
+      {auslaufend.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <CalendarClock className="h-4 w-4 text-orange-500" />
+              Verträge laufen in 90 Tagen aus
+              <Badge variant="outline" className="ml-auto text-orange-600 border-orange-300 bg-orange-50">
+                {auslaufend.length}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {auslaufend.map((v) => (
+                <div key={v.id} className="flex items-center gap-3 rounded-lg border border-slate-100 px-3 py-2 hover:bg-slate-50 transition-colors">
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold
+                    ${v.restTage <= 30 ? 'bg-red-100 text-red-700' : v.restTage <= 60 ? 'bg-orange-100 text-orange-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                    {v.restTage}d
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{v.objekt} · {v.einheit}</p>
+                    <p className="text-xs text-muted-foreground truncate">{v.mieter} · bis {new Date(v.vertragsende).toLocaleDateString('de-DE')}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-medium">{euro(v.nettomiete)}</p>
+                    <p className="text-xs text-muted-foreground">Kalt/Mo.</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Unreviewed Belege */}
       {kpis?.belege?.unreviewed > 0 && (

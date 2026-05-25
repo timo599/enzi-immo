@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { mieterApi, mietvertraegeApi } from '@/lib/api'
+import { mieterApi, mietvertraegeApi, api } from '@/lib/api'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,8 +13,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { Plus, User, Mail, Phone, Pencil, FileText, FolderOpen, Search, Building2 } from 'lucide-react'
+import { Plus, User, Mail, Phone, Pencil, FileText, FolderOpen, Search, Building2, MessageSquare, Phone as PhoneIcon, Mail as MailIcon, MapPin, NotebookPen, Trash2 } from 'lucide-react'
 import { DocumentSection } from '@/components/document-section'
 import { euro, datum } from '@/lib/format'
 
@@ -22,6 +24,28 @@ interface Mieter {
   id: string; vorname?: string; nachname: string; firmenname?: string; email?: string
   telefon?: string; strasse?: string; hausnummer?: string; plz?: string; stadt?: string; iban?: string
   notizen?: string; anrede?: string
+}
+
+type KommKat = 'anruf' | 'brief' | 'email' | 'vor_ort' | 'sonstiges'
+
+interface Kommunikation {
+  id: string; datum: string; kategorie: KommKat; betreff?: string; text: string; erstelltAm: string
+}
+
+const KAT_LABEL: Record<KommKat, string> = {
+  anruf: 'Anruf', brief: 'Brief', email: 'E-Mail', vor_ort: 'Vor Ort', sonstiges: 'Sonstiges',
+}
+const KAT_COLOR: Record<KommKat, string> = {
+  anruf: 'bg-blue-100 text-blue-700', brief: 'bg-purple-100 text-purple-700',
+  email: 'bg-green-100 text-green-700', vor_ort: 'bg-orange-100 text-orange-700',
+  sonstiges: 'bg-slate-100 text-slate-600',
+}
+const KAT_ICON: Record<KommKat, React.ReactNode> = {
+  anruf:    <PhoneIcon className="h-3 w-3" />,
+  brief:    <NotebookPen className="h-3 w-3" />,
+  email:    <MailIcon className="h-3 w-3" />,
+  vor_ort:  <MapPin className="h-3 w-3" />,
+  sonstiges:<MessageSquare className="h-3 w-3" />,
 }
 
 interface MietvertragMieter {
@@ -62,6 +86,28 @@ export default function MieterPage() {
     queryKey: ['mieter-vertraege', selected?.id],
     queryFn: () => mietvertraegeApi.list({ mieterId: selected!.id }),
     enabled: !!selected,
+  })
+
+  // Kommunikations-Log
+  const [kommForm, setKommForm] = useState({ datum: new Date().toISOString().slice(0, 10), kategorie: 'anruf' as KommKat, betreff: '', text: '' })
+  const [kommOpen, setKommOpen] = useState(false)
+
+  const { data: kommData, refetch: refetchKomm } = useQuery({
+    queryKey: ['kommunikation', selected?.id],
+    queryFn: () => api.get<{ data: Kommunikation[] }>(`/kommunikation?mieterId=${selected!.id}`).then(r => r.data.data),
+    enabled: !!selected,
+  })
+
+  const createKomm = useMutation({
+    mutationFn: (body: typeof kommForm) =>
+      api.post('/kommunikation', { ...body, mieterId: selected!.id }),
+    onSuccess: () => { refetchKomm(); toast.success('Eintrag gespeichert'); setKommOpen(false); setKommForm({ datum: new Date().toISOString().slice(0, 10), kategorie: 'anruf', betreff: '', text: '' }) },
+    onError: () => toast.error('Fehler beim Speichern'),
+  })
+
+  const deleteKomm = useMutation({
+    mutationFn: (id: string) => api.delete(`/kommunikation/${id}`),
+    onSuccess: () => { refetchKomm(); toast.success('Eintrag gelöscht') },
   })
 
   const saveMut = useMutation({
@@ -181,10 +227,11 @@ export default function MieterPage() {
               </SheetHeader>
 
               <Tabs defaultValue="info" className="mt-4">
-                <TabsList className="w-full grid grid-cols-3">
-                  <TabsTrigger value="info"><User className="h-3.5 w-3.5 mr-1.5" />Stammdaten</TabsTrigger>
-                  <TabsTrigger value="vertraege"><FileText className="h-3.5 w-3.5 mr-1.5" />Verträge</TabsTrigger>
-                  <TabsTrigger value="dokumente"><FolderOpen className="h-3.5 w-3.5 mr-1.5" />Dokumente</TabsTrigger>
+                <TabsList className="w-full grid grid-cols-4">
+                  <TabsTrigger value="info"><User className="h-3.5 w-3.5 mr-1" />Info</TabsTrigger>
+                  <TabsTrigger value="vertraege"><FileText className="h-3.5 w-3.5 mr-1" />Verträge</TabsTrigger>
+                  <TabsTrigger value="kommunikation"><MessageSquare className="h-3.5 w-3.5 mr-1" />Log</TabsTrigger>
+                  <TabsTrigger value="dokumente"><FolderOpen className="h-3.5 w-3.5 mr-1" />Dok.</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="info" className="mt-4 space-y-3 text-sm">
@@ -230,6 +277,58 @@ export default function MieterPage() {
                   )}
                 </TabsContent>
 
+                {/* ── Kommunikations-Log ───────────────────────── */}
+                <TabsContent value="kommunikation" className="mt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium text-slate-700">Kommunikationsverlauf</p>
+                    <Button size="sm" onClick={() => setKommOpen(true)}>
+                      <Plus className="h-3.5 w-3.5 mr-1" />Eintrag
+                    </Button>
+                  </div>
+
+                  {!kommData || kommData.length === 0 ? (
+                    <div className="border border-dashed rounded-lg p-6 text-center text-sm text-muted-foreground">
+                      Noch keine Einträge. Jetzt ersten Kontakt dokumentieren.
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      {/* Timeline-Linie */}
+                      <div className="absolute left-4 top-0 bottom-0 w-px bg-slate-200" />
+                      <div className="space-y-4 pl-10">
+                        {kommData.map((k) => (
+                          <div key={k.id} className="relative">
+                            {/* Punkt auf der Linie */}
+                            <div className={`absolute -left-6 top-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${KAT_COLOR[k.kategorie]}`}>
+                              {KAT_ICON[k.kategorie]}
+                            </div>
+                            <div className="rounded-lg border border-slate-100 bg-white p-3 shadow-sm hover:shadow transition-shadow group">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${KAT_COLOR[k.kategorie]}`}>
+                                    {KAT_ICON[k.kategorie]}
+                                    {KAT_LABEL[k.kategorie]}
+                                  </span>
+                                  <span className="text-xs text-slate-400">
+                                    {new Date(k.datum).toLocaleDateString('de-DE')}
+                                  </span>
+                                  {k.betreff && <span className="text-xs font-medium text-slate-700">{k.betreff}</span>}
+                                </div>
+                                <button
+                                  onClick={() => deleteKomm.mutate(k.id)}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-red-500"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                              <p className="mt-1.5 text-sm text-slate-600 whitespace-pre-wrap">{k.text}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
                 <TabsContent value="dokumente" className="mt-4">
                   <DocumentSection scope="mieter" entityId={selected.id} />
                 </TabsContent>
@@ -238,6 +337,51 @@ export default function MieterPage() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* ── Kommunikation-Dialog ────────────────────────────────────── */}
+      <Dialog open={kommOpen} onOpenChange={setKommOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Kommunikation dokumentieren</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Datum</Label>
+                <Input type="date" value={kommForm.datum} onChange={e => setKommForm(f => ({ ...f, datum: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label>Art</Label>
+                <Select value={kommForm.kategorie} onValueChange={v => setKommForm(f => ({ ...f, kategorie: v as KommKat }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(Object.entries(KAT_LABEL) as [KommKat, string][]).map(([k, l]) => (
+                      <SelectItem key={k} value={k}>{l}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Betreff (optional)</Label>
+              <Input value={kommForm.betreff} onChange={e => setKommForm(f => ({ ...f, betreff: e.target.value }))} placeholder="z.B. Heizungsausfall gemeldet" />
+            </div>
+            <div className="space-y-1">
+              <Label>Notiz *</Label>
+              <Textarea
+                value={kommForm.text}
+                onChange={e => setKommForm(f => ({ ...f, text: e.target.value }))}
+                placeholder="Was wurde besprochen? Welche Vereinbarung wurde getroffen?"
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setKommOpen(false)}>Abbrechen</Button>
+            <Button onClick={() => createKomm.mutate(kommForm)} disabled={!kommForm.text || createKomm.isPending}>
+              {createKomm.isPending ? 'Speichern…' : 'Speichern'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Edit-Dialog ─────────────────────────────────────────────── */}
       <Dialog open={open} onOpenChange={setOpen}>

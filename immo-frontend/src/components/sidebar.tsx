@@ -20,6 +20,8 @@ import {
   Brain,
   Settings,
   List,
+  CalendarClock,
+  Wrench,
 } from 'lucide-react'
 import { QuickSearch } from './quick-search'
 
@@ -35,6 +37,8 @@ const NAV = [
   { href: '/kontoauszuege',   label: 'Kontoauszüge',     icon: CreditCard },
   { href: '/mieterhoehungen', label: 'Mieterhöhungen',   icon: TrendingUp },
   { href: '/mieterliste',     label: 'Mieterliste',       icon: List },
+  { href: '/fristen',         label: 'Fristen',           icon: CalendarClock },
+  { href: '/reparaturen',     label: 'Reparaturen',       icon: Wrench },
   { href: '/lernmodus',       label: 'Lernmodus',         icon: Brain },
   { href: '/einstellungen',   label: 'Einstellungen',     icon: Settings },
 ]
