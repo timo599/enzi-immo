@@ -8,8 +8,14 @@ import { StatCard } from '@/components/stat-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Building2, Home, Users, AlertTriangle, FileText, Euro, CalendarClock } from 'lucide-react'
+import { Building2, Home, Users, AlertTriangle, FileText, Euro, CalendarClock, DoorOpen } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+
+interface LeerstandEintrag {
+  einheitId: string; bezeichnung: string; objekt: string; adresse: string
+  m2: number | null; leerstandSeit: string; tage: number
+  letzteNettomiete: number; entgangeneEinnahmen: number | null
+}
 
 interface AuslaufenderVertrag {
   id: string; einheit: string; objekt: string; adresse: string
@@ -36,9 +42,15 @@ export default function DashboardPage() {
       .then(r => r.data.data),
   })
 
+  const { data: leerstandRes } = useQuery({
+    queryKey: ['dashboard-leerstand'],
+    queryFn: () => api.get<{ data: LeerstandEintrag[] }>('/dashboard/leerstand').then(r => r.data.data),
+  })
+
   const kpis = kpisRes?.data?.data
   const cashflow: { monat: string; soll: number; ist: number }[] = cashflowRes?.data?.data ?? []
   const auslaufend: AuslaufenderVertrag[] = auslaufendRes ?? []
+  const leerstand: LeerstandEintrag[] = leerstandRes ?? []
   const ampel: {
     id: string; einheit: string; mieter: string; aktuelleMiete: number
     neueMiete: number | null; naechstmoeglichesDatum: string
@@ -177,6 +189,40 @@ export default function DashboardPage() {
                     <p className="text-sm font-medium">{euro(v.nettomiete)}</p>
                     <p className="text-xs text-muted-foreground">Kalt/Mo.</p>
                   </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Leerstandskosten */}
+      {leerstand.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <DoorOpen className="h-4 w-4 text-slate-400" />
+              Leerstehende Einheiten
+              <Badge variant="outline" className="ml-auto text-slate-600">{leerstand.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {leerstand.map(l => (
+                <div key={l.einheitId} className="flex items-center gap-3 rounded-lg border border-slate-100 px-3 py-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{l.objekt} · {l.bezeichnung}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Leer seit {new Date(l.leerstandSeit).toLocaleDateString('de-DE')} · {l.tage} Tage
+                      {l.m2 ? ` · ${l.m2} m²` : ''}
+                    </p>
+                  </div>
+                  {l.entgangeneEinnahmen != null && l.entgangeneEinnahmen > 0 && (
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-semibold text-red-600">−{euro(l.entgangeneEinnahmen)}</p>
+                      <p className="text-xs text-muted-foreground">entgangen</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

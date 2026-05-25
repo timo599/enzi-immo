@@ -22,6 +22,9 @@ import {
   List,
   CalendarClock,
   Wrench,
+  ClipboardCheck,
+  Vault,
+  ShieldCheck,
 } from 'lucide-react'
 import { QuickSearch } from './quick-search'
 
@@ -39,6 +42,9 @@ const NAV = [
   { href: '/mieterliste',     label: 'Mieterliste',       icon: List },
   { href: '/fristen',         label: 'Fristen',           icon: CalendarClock },
   { href: '/reparaturen',     label: 'Reparaturen',       icon: Wrench },
+  { href: '/wartung',         label: 'Wartungsplan',      icon: ShieldCheck },
+  { href: '/uebergabe',       label: 'Übergaben',         icon: ClipboardCheck },
+  { href: '/kaution',         label: 'Kautionen',         icon: Vault },
   { href: '/lernmodus',       label: 'Lernmodus',         icon: Brain },
   { href: '/einstellungen',   label: 'Einstellungen',     icon: Settings },
 ]
