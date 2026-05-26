@@ -201,6 +201,7 @@ model Tenant {
   wartungsaufgaben      Wartungsaufgabe[]
   uebergabeprotokolle   Uebergabeprotokoll[]
   kautionen             Kaution[]
+  mieterPortalUsers     MieterPortalUser[]
 
   @@map("tenants")
 }
@@ -349,6 +350,7 @@ model Mieter {
   mietvertragMieter MietvertragMieter[]
   dokumente         Dokument[]
   kommunikationen   Kommunikation[]
+  portalUser        MieterPortalUser?
 
   @@index([tenantId])
   @@map("mieter")
@@ -1176,4 +1178,24 @@ model Kaution {
 
   @@index([tenantId])
   @@map("kautionen")
+}
+
+// ── MIETER-PORTAL ────────────────────────────────────────────
+
+model MieterPortalUser {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  mieterId     String    @unique @map("mieter_id") @db.Uuid
+  email        String
+  passwordHash String    @map("password_hash")
+  aktiv        Boolean   @default(true)
+  letzterLogin DateTime? @map("letzter_login")
+  erstelltAm   DateTime  @default(now()) @map("erstellt_am")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  mieter Mieter @relation(fields: [mieterId], references: [id])
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("mieter_portal_users")
 }

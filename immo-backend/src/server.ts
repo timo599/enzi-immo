@@ -63,6 +63,9 @@ import { reparaturRoutes }        from './modules/reparatur/reparatur.routes.js'
 import { wartungRoutes }          from './modules/wartung/wartung.routes.js'
 import { uebergabeRoutes }        from './modules/uebergabe/uebergabe.routes.js'
 import { kautionRoutes }          from './modules/kaution/kaution.routes.js'
+import { portalRoutes }           from './modules/portal/portal.routes.js'
+import { vpiRoutes }              from './modules/vpi/vpi.routes.js'
+import { scanRoutes }             from './modules/scan/scan.routes.js'
 
 const MAX_UPLOAD_BYTES = 26 * 1024 * 1024
 
@@ -152,6 +155,9 @@ async function buildApp() {
   await app.register(wartungRoutes,                   { prefix: `${API}/wartung` })
   await app.register(uebergabeRoutes,                 { prefix: `${API}/uebergabe` })
   await app.register(kautionRoutes,                   { prefix: `${API}/kaution` })
+  await app.register(portalRoutes,                    { prefix: `${API}/portal` })
+  await app.register(vpiRoutes,                       { prefix: `${API}/vpi` })
+  await app.register(scanRoutes,                      { prefix: `${API}/scan` })
 
   return app
 }
