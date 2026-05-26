@@ -202,6 +202,9 @@ model Tenant {
   uebergabeprotokolle   Uebergabeprotokoll[]
   kautionen             Kaution[]
   mieterPortalUsers     MieterPortalUser[]
+  teamMitglieder        TeamMitglied[]
+  todos                 Todo[]
+  baustellen            Baustelle[]
 
   @@map("tenants")
 }
@@ -244,8 +247,10 @@ model Firma {
   aktiv      Boolean  @default(true)
   erstelltAm DateTime @default(now()) @map("erstellt_am")
 
-  tenant  Tenant   @relation(fields: [tenantId], references: [id])
-  objekte Objekt[]
+  tenant      Tenant        @relation(fields: [tenantId], references: [id])
+  objekte     Objekt[]
+  todos       Todo[]
+  baustellen  Baustelle[]
 
   @@index([tenantId])
   @@map("firmen")
@@ -285,6 +290,8 @@ model Objekt {
   dokumente             Dokument[]
   reparaturen           Reparatur[]
   wartungsaufgaben      Wartungsaufgabe[]
+  todos                 Todo[]
+  baustellen            Baustelle[]
 
   @@index([tenantId])
   @@map("objekte")
@@ -319,6 +326,7 @@ model Einheit {
   kommunikationen     Kommunikation[]
   wartungsaufgaben    Wartungsaufgabe[]
   uebergabeprotokolle Uebergabeprotokoll[]
+  todos               Todo[]
 
   @@index([objektId])
   @@index([tenantId])
@@ -1198,4 +1206,131 @@ model MieterPortalUser {
   @@unique([tenantId, email])
   @@index([tenantId])
   @@map("mieter_portal_users")
+}
+
+// ── TODO-LISTE ────────────────────────────────────────────────
+
+enum TodoStatus {
+  offen
+  in_bearbeitung
+  erledigt
+  abgebrochen
+}
+
+enum TodoPrioritaet {
+  niedrig
+  mittel
+  hoch
+  dringend
+}
+
+model TeamMitglied {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  name       String
+  email      String?
+  telefon    String?
+  rolle      String    @default("mitarbeiter") // verwalter, handwerker, bauarbeiter, extern, mitarbeiter
+  aktiv      Boolean   @default(true)
+  erstelltAm DateTime  @default(now()) @map("erstellt_am")
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  todoZuweisungen TodoZuweisung[]
+  baustellenZuweisungen BaustelleZuweisung[]
+
+  @@index([tenantId])
+  @@map("team_mitglieder")
+}
+
+model Todo {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String        @map("tenant_id") @db.Uuid
+  titel        String
+  beschreibung String?
+  status       TodoStatus    @default(offen)
+  prioritaet   TodoPrioritaet @default(mittel)
+  kategorie    String?
+  firmaId      String?       @map("firma_id") @db.Uuid
+  objektId     String?       @map("objekt_id") @db.Uuid
+  einheitId    String?       @map("einheit_id") @db.Uuid
+  baustelleId  String?       @map("baustelle_id") @db.Uuid
+  faelligAm    DateTime?     @map("faellig_am") @db.Date
+  erledigtAm   DateTime?     @map("erledigt_am")
+  erstelltVon  String?       @map("erstellt_von")
+  erstelltAm   DateTime      @default(now()) @map("erstellt_am")
+  geaendertAm  DateTime?     @updatedAt @map("geaendert_am")
+
+  tenant    Tenant        @relation(fields: [tenantId], references: [id])
+  firma     Firma?        @relation(fields: [firmaId], references: [id])
+  objekt    Objekt?       @relation(fields: [objektId], references: [id])
+  einheit   Einheit?      @relation(fields: [einheitId], references: [id])
+  baustelle Baustelle?    @relation(fields: [baustelleId], references: [id])
+  zuweisungen TodoZuweisung[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@map("todos")
+}
+
+model TodoZuweisung {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  todoId         String       @map("todo_id") @db.Uuid
+  teamMitgliedId String       @map("team_mitglied_id") @db.Uuid
+  zugewiesenAm   DateTime     @default(now()) @map("zugewiesen_am")
+
+  todo           Todo         @relation(fields: [todoId], references: [id], onDelete: Cascade)
+  teamMitglied   TeamMitglied @relation(fields: [teamMitgliedId], references: [id], onDelete: Cascade)
+
+  @@unique([todoId, teamMitgliedId])
+  @@map("todo_zuweisungen")
+}
+
+// ── BAUSTELLEN-PLANNER ────────────────────────────────────────
+
+enum BaustelleStatus {
+  planung
+  aktiv
+  pausiert
+  abgeschlossen
+}
+
+model Baustelle {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String          @map("tenant_id") @db.Uuid
+  name         String
+  beschreibung String?
+  status       BaustelleStatus @default(planung)
+  firmaId      String?         @map("firma_id") @db.Uuid
+  objektId     String?         @map("objekt_id") @db.Uuid
+  startDatum   DateTime?       @map("start_datum") @db.Date
+  endDatum     DateTime?       @map("end_datum") @db.Date
+  budget       Decimal?        @db.Decimal(12, 2)
+  kostenBisher Decimal?        @map("kosten_bisher") @db.Decimal(12, 2)
+  zugangscode  String?         // kurzer Code für Bauarbeiter-Login
+  notizen      String?
+  erstelltAm   DateTime        @default(now()) @map("erstellt_am")
+  geaendertAm  DateTime?       @updatedAt @map("geaendert_am")
+
+  tenant      Tenant            @relation(fields: [tenantId], references: [id])
+  firma       Firma?            @relation(fields: [firmaId], references: [id])
+  objekt      Objekt?           @relation(fields: [objektId], references: [id])
+  todos       Todo[]
+  zuweisungen BaustelleZuweisung[]
+
+  @@index([tenantId])
+  @@map("baustellen")
+}
+
+model BaustelleZuweisung {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  baustelleId    String       @map("baustelle_id") @db.Uuid
+  teamMitgliedId String       @map("team_mitglied_id") @db.Uuid
+  rolle          String       @default("arbeiter") // bauleiter, arbeiter, subunternehmer
+  zugewiesenAm   DateTime     @default(now()) @map("zugewiesen_am")
+
+  baustelle    Baustelle    @relation(fields: [baustelleId], references: [id], onDelete: Cascade)
+  teamMitglied TeamMitglied @relation(fields: [teamMitgliedId], references: [id], onDelete: Cascade)
+
+  @@unique([baustelleId, teamMitgliedId])
+  @@map("baustelle_zuweisungen")
 }

@@ -20,7 +20,7 @@ export const CreateMieterSchema = z.object({
 export const UpdateMieterSchema = CreateMieterSchema.partial()
 export const ListMieterQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().positive().max(100).default(20),
+  pageSize: z.coerce.number().int().positive().max(500).default(20),
   search: z.string().max(100).optional(),
 })
 export const MieterIdParamSchema = z.object({ id: z.string().uuid() })

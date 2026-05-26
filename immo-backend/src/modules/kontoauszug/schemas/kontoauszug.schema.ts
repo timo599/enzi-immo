@@ -16,7 +16,7 @@ export const ImportQuerySchema = z.object({
 export const ListKontoauszuegeQuerySchema = z.object({
   bankkontoId: z.string().uuid().optional(),
   page: z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  pageSize: z.coerce.number().int().min(1).max(500).default(20),
 })
 
 // ─── Liste Buchungszeilen ────────────────────────────────────────────────────
@@ -26,7 +26,7 @@ export const ListBuchungenQuerySchema = z.object({
     .enum(['unmatched', 'auto_matched', 'manually_matched', 'ambiguous', 'ignored'])
     .optional(),
   page: z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+  pageSize: z.coerce.number().int().min(1).max(500).default(50),
 })
 
 // ─── Manuelle Zuordnung ──────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ export const OffenePostenQuerySchema = z.object({
   nurMitRueckstand: z.coerce.boolean().default(false),
   objektId: z.string().uuid().optional(),
   page: z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  pageSize: z.coerce.number().int().min(1).max(500).default(20),
 })
 
 // ─── Params ──────────────────────────────────────────────────────────────────

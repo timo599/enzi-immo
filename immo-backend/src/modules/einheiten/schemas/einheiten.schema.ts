@@ -21,7 +21,7 @@ export const CreateEinheitSchema = CreateEinheitBase
 export const UpdateEinheitSchema = CreateEinheitBase.partial().omit({ objektId: true })
 export const ListEinheitenQuerySchema = z.object({
   page:     z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().positive().max(100).default(20),
+  pageSize: z.coerce.number().int().positive().max(500).default(20),
   objektId: z.string().uuid().optional(),
   search:   z.string().max(100).optional(),
 })

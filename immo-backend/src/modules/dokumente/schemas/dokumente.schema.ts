@@ -54,7 +54,7 @@ export const ListDokumenteQuerySchema = z.object({
     .enum(['pending', 'processing', 'extracted', 'needs_review', 'reviewed', 'failed', 'manual'])
     .optional(),
   page:     z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().positive().max(100).default(20),
+  pageSize: z.coerce.number().int().positive().max(500).default(20),
 })
 
 // ─── Update Metadata (titel, beschreibung, kategorie, relations) ─

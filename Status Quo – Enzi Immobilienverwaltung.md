@@ -1,5 +1,5 @@
 # Status Quo – Enzi Immobilienverwaltung
-*Zuletzt aktualisiert: 26.05.2026*
+*Zuletzt aktualisiert: 26.05.2026 (Abend)*
 
 ---
 
@@ -20,6 +20,7 @@
 
 ## Letzte Commits
 ```
+a6d959c  feat: Mieterliste Import + Excel-Design (Mieter, Verträge, MwSt-Spalte)
 c2c3e16  feat: Mieter-Portal, VPI-Rechner, Scan-to-Beleg (Frontend)
 db5aefd  feat: Mieter-Portal, VPI-Rechner, Scan-to-Beleg (Backend)
 2b0a694  feat: Wartungsplan, Übergabeprotokoll, Kautionen, Leerstand-Widget (Frontend)
@@ -74,6 +75,16 @@ ae125f4  feat: Mieterliste – neuer View-Endpoint und Notiz-PATCH (Backend)
   - Enum-korrekte Schlüssel (personenanzahl, gesamtflaeche, etc.)
   - Wenn keine Fragen generierbar → Session direkt abgeschlossen
   - DB-Lookup für Kostenart-Kürzel statt Regex
+
+### Neue Features (26.05.2026 Abend)
+- ✅ **Datenmigration Mieterliste** — 80 Mieter + 86 Mietverträge aus Excel importiert
+  - EN Verwaltung: Wollgrasweg, H107, R152, R154, H182, H184, H184a
+  - NE Investieren: H180, F1, F3
+  - NC Verwaltung: Z33, Z33/1, Z35, Z35/1
+- ✅ **Mieterliste: Excel-Layout** — Spalten wie Original: Etage | Mieter | Fläche qm | Beginn | LZ | Miete/qm | Miete | NK | MwSt | Gesamt incl. MwSt
+  - MwSt automatisch: 20% für Gewerbe, 0% für Wohnraum
+  - Gesamt-Tab mit Firma-Übersicht inkl. Jahressummen
+  - Inline-Notizen weiterhin editierbar
 
 ### Neue Features (25.05.2026)
 - ✅ **Datenmigration** — alle lokalen Daten in Neon Production übertragen
@@ -157,6 +168,10 @@ ae125f4  feat: Mieterliste – neuer View-Endpoint und Notiz-PATCH (Backend)
 ### Dringend (User-Action erforderlich)
 - ⚠️ **Anthropic-Guthaben aufladen** — Enzi KI zeigt „offline" weil API-Credits aufgebraucht sind
   → https://console.anthropic.com/settings/billing
+
+### Datenmigration
+- ✅ 84 Mieter, 87 Mietverträge (inkl. 4 Original-Mieter, 1 Original-Vertrag)
+- **Fehlende Einheiten**: WERBORO und Scheider haben noch keine Mietverträge (Einheiten Z35/4.OG und Z35/2.OG rechts müssen noch zugeordnet werden)
 
 ### Sicherheit
 - ⚠️ Konto-Passwort noch schwach — bitte ändern

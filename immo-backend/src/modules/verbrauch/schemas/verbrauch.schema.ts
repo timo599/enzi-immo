@@ -40,7 +40,7 @@ export const ListVerbrauchQuerySchema = z.object({
   objektId:      z.string().uuid().optional(),
   verbrauchstyp: VerbrauchstypEnum.optional(),
   page:          z.coerce.number().int().positive().default(1),
-  pageSize:      z.coerce.number().int().positive().max(100).default(20),
+  pageSize:      z.coerce.number().int().positive().max(500).default(20),
 })
 
 export const VerbrauchIdParamSchema = z.object({ id: z.string().uuid() })

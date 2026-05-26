@@ -1,7 +1,7 @@
 import type { PaginationMeta, PaginationQuery } from '../types/common.js'
 
 export const DEFAULT_PAGE_SIZE = 20
-export const MAX_PAGE_SIZE = 100
+export const MAX_PAGE_SIZE = 500
 
 export function parsePagination(query: PaginationQuery): { skip: number; take: number; page: number; pageSize: number } {
   const page = Math.max(1, query.page ?? 1)

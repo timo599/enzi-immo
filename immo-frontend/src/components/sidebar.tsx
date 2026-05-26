@@ -26,6 +26,8 @@ import {
   Vault,
   ShieldCheck,
   KeyRound,
+  CheckSquare,
+  HardHat,
 } from 'lucide-react'
 import { QuickSearch } from './quick-search'
 
@@ -48,6 +50,8 @@ const NAV = [
   { href: '/kaution',         label: 'Kautionen',         icon: Vault },
   { href: '/vpi',             label: 'VPI-Rechner',       icon: TrendingUp },
   { href: '/portal',          label: 'Mieter-Portal',     icon: KeyRound },
+  { href: '/todos',           label: 'Aufgaben',           icon: CheckSquare },
+  { href: '/baustellen',      label: 'Baustellen',         icon: HardHat },
   { href: '/lernmodus',       label: 'Lernmodus',         icon: Brain },
   { href: '/einstellungen',   label: 'Einstellungen',     icon: Settings },
 ]

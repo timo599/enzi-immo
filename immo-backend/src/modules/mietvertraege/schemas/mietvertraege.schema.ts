@@ -58,7 +58,7 @@ export const UpdateMietvertragSchema = CreateMietvertragBase
 
 export const ListMietvertraegeQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().positive().max(100).default(20),
+  pageSize: z.coerce.number().int().positive().max(500).default(20),
   einheitId: z.string().uuid().optional(),
   objektId: z.string().uuid().optional(),
   mietart: MietartEnum.optional(),
