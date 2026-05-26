@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Enzmann Immobilien Platform",
+  "schemaVersion": 1,
+  "description": "Vollständige KI-Immobilienverwaltungsplattform für das Enzmann-Portfolio mit 8 Abteilungen: Dashboard, Objekte, Vermietung, Finanzen, Nebenkosten, Handwerker, Renovierung, Marketing und KI-Assistent. Echte Daten aus EN Verwaltung, NC, AKE und ENZO Real Estate."
+}
+</script>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enzmann Real Estate Intelligence</title>
+<style>
+:root {
+  color-scheme: light;
+  --navy: #1b3358;
+  --navy-mid: #24426e;
+  --gold: #c9a227;
+  --gold-light: #e8c547;
+  --bg: #f0f4f8;
+  --card: #ffffff;
+  --text: #1a202c;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --green: #16a34a;
+  --amber: #d97706;
+  --red: #dc2626;
+  --blue: #2563eb;
+  --sidebar: 242px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar);background:var(--navy);color:#fff;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
+.logo-mark{font-size:22px;font-weight:800;color:var(--gold);letter-spacing:-.5px}
+.logo-sub{font-size:10px;color:rgba(255,255,255,.45);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.nav-group{padding:6px 0}
+.nav-label{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);padding:8px 16px 3px}
+.nav-btn{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;font-size:13px;color:rgba(255,255,255,.72);border-left:3px solid transparent;transition:all .15s;user-select:none}
+.nav-btn:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-btn.active{background:rgba(201,162,39,.18);border-left-color:var(--gold);color:#fff}
+.nav-icon{font-size:15px;width:18px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px}
+.sidebar-footer{margin-top:auto;padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);font-size:10px;color:rgba(255,255,255,.35);line-height:1.6}
+
+/* ── LAYOUT ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.topbar-title{font-size:17px;font-weight:700;color:var(--navy)}
+.topbar-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.topbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.content{flex:1;overflow-y:auto;padding:20px 24px}
+
+/* ── BUTTONS ── */
+.btn{padding:7px 13px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:none;font-family:inherit;transition:all .15s;white-space:nowrap}
+.btn-navy{background:var(--navy);color:#fff}.btn-navy:hover{background:var(--navy-mid)}
+.btn-gold{background:var(--gold);color:#fff}.btn-gold:hover{background:var(--gold-light)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}.btn-outline:hover{background:var(--bg)}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-xs{padding:3px 8px;font-size:11px}
+
+/* ── KPI GRID ── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+.kpi{background:#fff;border-radius:10px;padding:14px 16px;border:1px solid var(--border);position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold)}
+.kpi-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.kpi-val{font-size:26px;font-weight:700;color:var(--navy);line-height:1}
+.kpi-note{font-size:11px;color:var(--muted);margin-top:3px}
+.kpi-trend{font-size:11px;font-weight:600;margin-top:5px}
+.up{color:var(--green)}.dn{color:var(--red)}
+
+/* ── CARDS ── */
+.card{background:#fff;border-radius:10px;border:1px solid var(--border);overflow:hidden;margin-bottom:16px}
+.ch{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.ct{font-size:13px;font-weight:600;color:var(--navy)}
+.cb{padding:14px 16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:7px 11px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:600}
+td{padding:9px 11px;border-bottom:1px solid var(--border);color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg)}
+
+/* ── BADGES ── */
+.b{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600}
+.bg{background:#dcfce7;color:#15803d}
+.br{background:#fee2e2;color:#b91c1c}
+.by{background:#fef9c3;color:#92400e}
+.bb{background:#dbeafe;color:#1d4ed8}
+.bp{background:#f3e8ff;color:#7c3aed}
+.bx{background:#f1f5f9;color:#475569}
+
+/* ── PROGRESS ── */
+.prog{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;background:var(--gold);transition:width .5s}
+
+/* ── ALERTS ── */
+.alert{padding:11px 14px;border-radius:8px;font-size:12px;display:flex;align-items:flex-start;gap:9px;margin-bottom:14px;line-height:1.5}
+.alert-w{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.alert-i{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+.alert-s{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.alert-r{background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:2px;background:var(--bg);border-radius:8px;padding:3px;margin-bottom:16px;width:fit-content}
+.tab{padding:6px 13px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--muted);transition:all .15s;border:none;background:none;font-family:inherit}
+.tab.on{background:#fff;color:var(--navy);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+/* ── PROPERTY CARD ── */
+.prop-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:13px;cursor:pointer;transition:all .15s}
+.prop-card:hover{border-color:var(--navy);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.prop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-bottom:16px}
+
+/* ── HW CARD ── */
+.hw-card{display:flex;align-items:center;gap:12px;padding:11px;background:#fff;border:1px solid var(--border);border-radius:8px;margin-bottom:9px}
+.hw-av{width:38px;height:38px;background:var(--navy);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0}
+
+/* ── RENO ── */
+.reno-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px}
+
+/* ── EXPOSE PREVIEW ── */
+.expose-hero{background:linear-gradient(135deg,var(--navy) 0%,#2d5a9e 100%);border-radius:10px;padding:20px;color:#fff;margin-bottom:14px}
+
+/* ── AI CHAT ── */
+.ai-wrap{display:grid;grid-template-columns:1fr 270px;gap:16px;height:calc(100vh - 134px)}
+.ai-col{display:flex;flex-direction:column}
+.ai-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--bg);border-radius:10px;border:1px solid var(--border);margin-bottom:12px}
+.msg{display:flex;gap:9px;max-width:88%}
+.msg.u{align-self:flex-end;flex-direction:row-reverse}
+.bubble{padding:9px 13px;border-radius:12px;font-size:12px;line-height:1.55}
+.msg.a .bubble{background:#fff;border:1px solid var(--border);border-radius:4px 12px 12px 12px}
+.msg.u .bubble{background:var(--navy);color:#fff;border-radius:12px 4px 12px 12px}
+.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.msg.a .av{background:var(--gold);color:#fff}
+.msg.u .av{background:var(--navy);color:#fff}
+.ai-row{display:flex;gap:8px}
+.ai-inp{flex:1;padding:9px 13px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;outline:none}
+.ai-inp:focus{border-color:var(--navy)}
+.quick-btn{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:6px;font-size:11px;border:1px solid var(--border);background:#fff;cursor:pointer;margin-bottom:6px;font-family:inherit;transition:all .15s;color:var(--text)}
+.quick-btn:hover{background:var(--bg);border-color:var(--navy)}
+
+/* ── FORMS ── */
+.fg{margin-bottom:12px}
+label{font-size:11px;color:var(--muted);display:block;margin-bottom:3px}
+input[type=text],select,textarea{padding:7px 11px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;width:100%;outline:none}
+input[type=text]:focus,select:focus,textarea:focus{border-color:var(--navy)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+
+/* ── CHART ── */
+.chart-wrap{position:relative;height:195px}
+
+/* ── HIDDEN ── */
+.hide{display:none!important}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── TASK ── */
+.task{display:flex;align-items:flex-start;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.task:last-child{border-bottom:none}
+.task-chk{width:15px;height:15px;border:2px solid var(--border);border-radius:3px;flex-shrink:0;margin-top:1px;cursor:pointer;transition:all .15s}
+.task-chk:hover{border-color:var(--green)}
+.task-ttl{font-size:12px;font-weight:500}
+.task-sub{font-size:11px;color:var(--muted);margin-top:1px}
+
+/* ── NK ROW ── */
+.nk-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)}
+.nk-row:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">⬡ ENZMANN</div>
+    <div class="logo-sub">Real Estate Intelligence</div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Übersicht</div>
+    <div class="nav-btn active" onclick="go('dashboard',this)"><span class="nav-icon">📊</span>Dashboard</div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Verwaltung</div>
+    <div class="nav-btn" onclick="go('objekte',this)"><span class="nav-icon">🏢</span>Objekte &amp; Portfolio</div>
+    <div class="nav-btn" onclick="go('vermietung',this)"><span class="nav-icon">🏠</span>Vermietung<span class="nav-badge">2</span></div>
+    <div class="nav-btn" onclick="go('finanzen',this)"><span class="nav-icon">💰</span>Finanzen</div>
+    <div class="nav-btn" onclick="go('nebenkosten',this)"><span class="nav-icon">💡</span>Nebenkosten<span class="nav-badge">1</span></div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Betrieb</div>
+    <div class="nav-btn" onclick="go('handwerker',this)"><span class="nav-icon">🔧</span>Handwerker</div>
+    <div class="nav-btn" onclick="go('renovierung',this)"><span class="nav-icon">🏗️</span>Renovierung</div>
+    <div class="nav-btn" onclick="go('marketing',this)"><span class="nav-icon">📢</span>Marketing &amp; Exposés</div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">KI-Tools</div>
+    <div class="nav-btn" onclick="go('ai',this)"><span class="nav-icon">🤖</span>KI-Assistent</div>
+  </div>
+
+  <div class="sidebar-footer">
+    EN Verwaltung GmbH &amp; Co. KG<br>
+    NC Kemnat · AKE · ENZO RE<br>
+    Stand: Mai 2026
+  </div>
+</nav>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="tb-title">Dashboard</div>
+      <div class="topbar-sub" id="tb-sub">Gesamtübersicht aller Portfolios · Benjamin Enzmann</div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-outline btn-sm">⚙️ Einstellungen</button>
+      <button class="btn btn-navy btn-sm" onclick="go('ai',document.querySelectorAll('.nav-btn')[9])">🤖 KI fragen</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ════ DASHBOARD ════ -->
+    <div id="s-dashboard">
+      <div class="alert alert-w">⚠️&nbsp; <div><strong>3 dringende Aufgaben:</strong> Übergabeprotokoll H184a · NK-Abrechnung Z33 (Frist 30.06.) · Kleinlager-Kündigungen versenden</div></div>
+
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-lbl">Objekte gesamt</div><div class="kpi-val">13</div><div class="kpi-note">EN · NC · AKE · ENZO</div></div>
+        <div class="kpi"><div class="kpi-lbl">Mieteinnahmen/Mo</div><div class="kpi-val">~€&nbsp;58k</div><div class="kpi-note">Netto-Kaltmiete</div><div class="kpi-trend up">↑ +3,2% ggü. Vorjahr</div></div>
+        <div class="kpi"><div class="kpi-lbl">Vermietungsquote</div><div class="kpi-val">94%</div><div class="kpi-note">58 von 62 Einheiten</div><div class="kpi-trend up">↑ Sehr gut</div></div>
+        <div class="kpi"><div class="kpi-lbl">Gesamtfläche</div><div class="kpi-val">5.430</div><div class="kpi-note">m² Nutzfläche</div></div>
+        <div class="kpi"><div class="kpi-lbl">Offene Aufgaben</div><div class="kpi-val" style="color:var(--red)">7</div><div class="kpi-note">davon 3 dringend</div></div>
+        <div class="kpi"><div class="kpi-lbl">Aktive Reno-Proj.</div><div class="kpi-val">2</div><div class="kpi-note">Budget: € 64k</div></div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="ch"><div class="ct">📋 Offene Aufgaben</div><button class="btn btn-outline btn-xs">Alle anzeigen</button></div>
+          <div class="cb" style="padding:8px 16px">
+            <div class="task"><div class="task-chk" onclick="doneTask(this)"></div><div style="flex:1"><div class="task-ttl">Übergabeprotokoll H184a fertigstellen</div><div class="task-sub">🔴 Dringend · Mieter Martens/Eisenmann · Einzug 2024</div></div><span class="b br">Offen</span></div>
+            <div class="task"><div class="task-chk" onclick="doneTask(this)"></div><div style="flex:1"><div class="task-ttl">Kleinlager-Kündigungen versenden</div><div class="task-sub">🔴 Wunderhübsch · Wieacker · Heitmann · Breiding · Vogelei</div></div><span class="b br">Offen</span></div>
+            <div class="task"><div class="task-chk" onclick="doneTask(this)"></div><div style="flex:1"><div class="task-ttl">NK-Abrechnung 2024 — Zeppelinstr. 33</div><div class="task-sub">🟡 Fällig bis 30.06.2026</div></div><span class="b by">Pendent</span></div>
+            <div class="task"><div class="task-chk" onclick="doneTask(this)"></div><div style="flex:1"><div class="task-ttl">Mieterhöhung Blersch &amp; Fröhlich versenden</div><div class="task-sub">🔵 Briefe erstellt, Versand ausstehend</div></div><span class="b bb">Bereit</span></div>
+            <div class="task"><div class="task-chk" onclick="doneTask(this)"></div><div style="flex:1"><div class="task-ttl">W37 Bürofläche vermarkten — Besichtigungen koordinieren</div><div class="task-sub">🔵 119 m² seit Jan 2026 leer · 3 Anfragen offen</div></div><span class="b bb">In Arbeit</span></div>
+            <div class="task"><div class="task-chk" onclick="doneTask(this)"></div><div style="flex:1"><div class="task-ttl">Heizöl-Bestand H107 prüfen</div><div class="task-sub">🔵 Sommerbestellung rechtzeitig planen</div></div><span class="b bx">Geplant</span></div>
+            <div class="task"><div class="task-chk" onclick="doneTask(this)"></div><div style="flex:1"><div class="task-ttl">Dachdecker-Angebot Z33 einholen</div><div class="task-sub">🔵 Dachsanierung Herbst 2026 geplant</div></div><span class="b bx">Geplant</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div class="ch"><div class="ct">🏢 Portfolio-Status</div></div>
+            <div class="cb" style="padding:0">
+              <table>
+                <thead><tr><th>Portfolio</th><th>Obj.</th><th>Einh.</th><th>Quote</th><th>NK-Status</th></tr></thead>
+                <tbody>
+                  <tr><td><strong>EN Verwaltung</strong></td><td>10</td><td>44</td><td><span class="b bg">95%</span></td><td><span class="b bb">In Bearb.</span></td></tr>
+                  <tr><td><strong>NC Kemnat</strong></td><td>3</td><td>15</td><td><span class="b bg">93%</span></td><td><span class="b br">Offen !</span></td></tr>
+                  <tr><td><strong>AKE Hagnau</strong></td><td>1</td><td>3</td><td><span class="b bg">100%</span></td><td><span class="b bg">OK</span></td></tr>
+                  <tr><td><strong>ENZO RE</strong></td><td>—</td><td>Makler</td><td><span class="b bb">Aktiv</span></td><td>—</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="ch"><div class="ct">📈 Mieteinnahmen 2026</div></div>
+            <div class="cb"><div class="chart-wrap"><canvas id="revChart"></canvas></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="ct">🔧 Aktuelle Handwerker-Aufträge</div><button class="btn btn-navy btn-xs" onclick="go('handwerker',document.querySelectorAll('.nav-btn')[6])">Alle Aufträge →</button></div>
+        <div class="cb" style="padding:0">
+          <table>
+            <thead><tr><th>Objekt</th><th>Maßnahme</th><th>Handwerker</th><th>Kosten</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>H182</td><td>Sanitär — Bad OG Dichtung erneuern</td><td>Beck Sanitär</td><td>€ 420</td><td><span class="b by">Laufend</span></td></tr>
+              <tr><td>R154</td><td>E-Check Sicherungskasten</td><td>Müller Elektro</td><td>€ 680</td><td><span class="b bg">Fertig ✓</span></td></tr>
+              <tr><td>W37</td><td>Treppenhaus streichen</td><td>Profi-Maler</td><td>€ 2.800</td><td><span class="b bb">Angebot</span></td></tr>
+              <tr><td>Z33</td><td>Dachabdichtung Inspektion</td><td>Fischer Dach</td><td>€ 350</td><td><span class="b by">Ausstehend</span></td></tr>
+              <tr><td>H107</td><td>Heizung Jahreswartung</td><td>Beck Sanitär</td><td>€ 890</td><td><span class="b bg">Fertig ✓</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ OBJEKTE ════ -->
+    <div id="s-objekte" class="hide">
+      <div class="prop-grid">
+        <div class="prop-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px"><div><div style="font-size:13px;font-weight:600;color:var(--navy)">Haußmannstr. 180</div><div style="font-size:10px;color:var(--muted)">EN Verwaltung · Stuttgart</div></div><span class="b bg">Vermietet</span></div><div style="display:flex;gap:12px;font-size:11px;color:var(--muted)"><div><strong style="color:var(--text);font-size:13px;display:block">6</strong>Einheiten</div><div><strong style="color:var(--text);font-size:13px;display:block">450 m²</strong>Fläche</div><div><strong style="color:var(--text);font-size:13px;display:block">WG</strong>Typ</div></div><div class="prog" style="margin-top:9px"><div class="prog-fill" style="width:100%"></div></div></div>
+
+        <div class="prop-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px"><div><div style="font-size:13px;font-weight:600;color:var(--navy)">Haußmannstr. 182</div><div style="font-size:10px;color:var(--muted)">EN Verwaltung · Stuttgart</div></div><span class="b bg">Vermietet</span></div><div style="display:flex;gap:12px;font-size:11px;color:var(--muted)"><div><strong style="color:var(--text);font-size:13px;display:block">4</strong>Einheiten</div><div><strong style="color:var(--text);font-size:13px;display:block">320 m²</strong>Fläche</div><div><strong style="color:var(--text);font-size:13px;display:block">Wohn.</strong>Typ</div></div><div class="prog" style="margin-top:9px"><div class="prog-fill" style="width:100%"></div></div></div>
+
+        <div class="prop-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px"><div><div style="font-size:13px;font-weight:600;color:var(--navy)">Haußmannstr. 184</div><div style="font-size:10px;color:var(--muted)">EN Verwaltung · Stuttgart</div></div><span class="b bg">Vermietet</span></div><div style="display:flex;gap:12px;font-size:11px;color:var(--muted)"><div><strong style="color:var(--text);font-size:13px;display:block">5</strong>Einheiten</div><div><strong style="color:var(--text);font-size:13px;display:block">380 m²</strong>Fläche</div></div><div class="prog" style="margin-top:9px"><div class="prog-fill" style="width:100%"></div></div></div>
+
+        <div class="prop-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px"><div><div style="font-size:13px;font-weight:600;color:var(--navy)">Haußmannstr. 184a</div><div style="font-size:10px;color:var(--muted)">EN Verwaltung · Stuttgart</div></div><span class="b by">Teil-Leerst.</span></div><div style="display:flex;gap:12px;font-size:11px;color:var(--muted)"><div><strong style="color:var(--text);font-size:13px;display:block">3</strong>Einheiten</div><div><strong style="color:var(--text);font-size:13px;display:block">280 m²</strong>Fläche</div></div><div class="prog" style="margin-top:9px"><div class="prog-fill" style="width:66%"></div></div></div>
+
+        <div class="prop-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px"><div><div style="font-size:13px;font-weight:600;color:var(--navy)">Florianstr. 1 &amp; 3</div><div style="font-size:10px;color:var(--muted)">EN Verwaltung · Stuttgart</div></div><span class="b bg">Vermietet</span></div><div style="display:flex;gap:12px;font-size:11px;color:var(--muted)"><div><strong style="color:var(--text);font-size:13px;display:block">7</strong>Einheiten</div><div><strong style="color:var(--text);font-size:13px;display:block">610 m²</strong>Fläche</div></div><div class="prog" style="margin-top:9px"><div class="prog-fill" style="width:100%"></div></div></div>
+
+        <div class="prop-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px"><div><div style="font-size:13px;font-weight:600;color:var(--navy)">Rotenbergstr. 152 &amp; 154</div><div style="font-size:10px;color:var(--muted)">EN Verwaltung · Stuttgart-Ost</div></div><span class="b bg">Vermietet</span></div><div style="display:flex;gap:12px;font-size:11px;color:var(--muted)"><div><strong style="color:var(--text);font-size:13px;display:block">11</strong>Einheiten</div><div><strong style="color:var(--text);font-size:13px;display:block">900 m²</strong>Fläche</div></div><div class="prog" style="margin-top:9px"><div class="prog-fill" style="width:100%"></div></div></div>
+
+        <div class="prop-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px"><div><div style="font-size:13px;font-weight:600;color:var(--navy)">Wollgrasweg 37</div><div style="font-size:10px;color:var(--muted)">EN Verwaltung · Stuttgart-Vaihingen</div></div><span class="b by">1 Leerstand</span></div><div style="display:flex;gap:12px;font-size:11px;color:var(--muted)"><div><strong style="color:var(--text);font-size:13px;display:block">8</strong>Einheiten</div><div><strong style="color:var(--text);font-size:13px;display:block">680 m²</strong>Fläche</div><div><strong style="color:var(--text);font-size:13px;display:block">Gewerbe</strong>Typ</div></div><div class="prog" style="margin-top:9px"><div class="prog-fill" style="width:87%"></div></div></div>
+
+        <div class="prop-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px"><div><div style="font-size:13px;font-weight:600;color:var(--navy)">Hauptstätterstr. 107</div><div style="font-size:10px;color:var(--muted)">EN Verwaltung · Stuttgart-Mitte</div></div><span class="b bg">Vermietet</span></div><div style="display:flex;gap:12px;font-size:11px;color:var(--muted)"><div><strong style="color:var(--text);font-size:13px;display:block">10</strong>Einheiten</div><div><strong style="color:var(--text);font-size:13px;display:block">850 m²</strong>Fläche</div><div><strong style="color:var(--text);font-size:13px;display:block">Gemischt</strong>Typ</div></div><div class="prog" style="margin-top:9px"><div class="prog-fill" style="width:100%"></div></div></div>
+
+        <div class="prop-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px"><div><div style="font-size:13px;font-weight:600;color:var(--navy)">Zeppelinstr. 33 / 35</div><div style="font-size:10px;color:var(--muted)">NC Kemnat · Ostfildern</div></div><span class="b bg">Vermietet</span></div><div style="display:flex;gap:12px;font-size:11px;color:var(--muted)"><div><strong style="color:var(--text);font-size:13px;display:block">11</strong>Einheiten</div><div><strong style="color:var(--text);font-size:13px;display:block">960 m²</strong>Fläche</div></div><div class="prog" style="margin-top:9px"><div class="prog-fill" style="width:91%"></div></div></div>
+
+        <div class="prop-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px"><div><div style="font-size:13px;font-weight:600;color:var(--navy)">Hagnau (AKE)</div><div style="font-size:10px;color:var(--muted)">AKE Portfolio · Hagnau a. Bodensee</div></div><span class="b bg">Vermietet</span></div><div style="display:flex;gap:12px;font-size:11px;color:var(--muted)"><div><strong style="color:var(--text);font-size:13px;display:block">3</strong>Einheiten</div><div><strong style="color:var(--text);font-size:13px;display:block">—</strong>Fläche</div></div><div class="prog" style="margin-top:9px"><div class="prog-fill" style="width:100%"></div></div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="ct">📄 Dokumente &amp; Vertragsübersicht</div><button class="btn btn-navy btn-xs">+ Dokument hochladen</button></div>
+        <div class="cb" style="padding:0">
+          <table>
+            <thead><tr><th>Objekt</th><th>Dokument</th><th>Typ</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>H184a</td><td>Mietvertrag Martens / Eisenmann</td><td><span class="b bb">Mietvertrag</span></td><td><span class="b bg">Aktiv</span></td></tr>
+              <tr><td>H182</td><td>Mietvertrag Razi Ennoumi</td><td><span class="b bb">Mietvertrag</span></td><td><span class="b bg">Aktiv</span></td></tr>
+              <tr><td>H180</td><td>Einvernehmliche Mietaufhebung</td><td><span class="b by">Aufhebung</span></td><td><span class="b bx">Archiv</span></td></tr>
+              <tr><td>W37</td><td>MV Carl Benz Arena Betriebs GmbH</td><td><span class="b bp">Gewerbe</span></td><td><span class="b bg">Aktiv</span></td></tr>
+              <tr><td>W37</td><td>MV Ergänzung Uni Hohenheim 08/2025</td><td><span class="b bp">Gewerbe</span></td><td><span class="b bg">Aktiv</span></td></tr>
+              <tr><td>F1</td><td>Mietvertrag Weiß</td><td><span class="b bb">Mietvertrag</span></td><td><span class="b bg">Aktiv</span></td></tr>
+              <tr><td>H180</td><td>Mieteränderung Refki</td><td><span class="b by">Änderung</span></td><td><span class="b bg">Aktiv</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ VERMIETUNG ════ -->
+    <div id="s-vermietung" class="hide">
+      <div class="tabs">
+        <button class="tab on" onclick="tab(this,'tv-mieter')">👥 Mieterliste</button>
+        <button class="tab" onclick="tab(this,'tv-leer')">⚠️ Leerstände</button>
+        <button class="tab" onclick="tab(this,'tv-erh')">📈 Mieterhöhungen</button>
+        <button class="tab" onclick="tab(this,'tv-ueb')">🔑 Übergaben</button>
+      </div>
+
+      <div id="tv-mieter">
+        <div class="alert alert-i">ℹ️&nbsp;<div>Mieterliste Stand 01.01.2026 — <strong>58 aktive Mietverhältnisse</strong> über alle Portfolios</div></div>
+        <div class="card">
+          <div class="ch"><div class="ct">Aktive Mieter — EN Portfolio (Auswahl)</div><button class="btn btn-navy btn-xs">📊 Excel exportieren</button></div>
+          <div class="cb" style="padding:0">
+            <table>
+              <thead><tr><th>Objekt</th><th>Mieter</th><th>Einheit</th><th>Kaltmiete/Mo</th><th>Vertrag seit</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>H184a</td><td>Martens / Eisenmann</td><td>Wohnung</td><td>€ 1.250</td><td>2024</td><td><span class="b bg">Aktiv</span></td></tr>
+                <tr><td>H182</td><td>Razi Ennoumi</td><td>Wohnung</td><td>€ 980</td><td>2023</td><td><span class="b bg">Aktiv</span></td></tr>
+                <tr><td>H180</td><td>WG H180 (5 Zi.)</td><td>WG-Wohnung</td><td>€ 2.100</td><td>2026</td><td><span class="b bg">Aktiv</span></td></tr>
+                <tr><td>H180</td><td>Andric (Stellplatz)</td><td>TG-Stellplatz</td><td>€ 85</td><td>2022</td><td><span class="b bg">Aktiv</span></td></tr>
+                <tr><td>W37</td><td>Carl Benz Arena Betriebs GmbH</td><td>Gewerbe EG</td><td>€ 4.200</td><td>2020</td><td><span class="b bg">Aktiv</span></td></tr>
+                <tr><td>W37</td><td>Universität Hohenheim</td><td>Büro/Labor</td><td>€ 3.800</td><td>2025</td><td><span class="b bg">Aktiv</span></td></tr>
+                <tr><td>W37</td><td>Glintri OHG</td><td>Gewerbefl.</td><td>€ 1.900</td><td>2022</td><td><span class="b bg">Aktiv</span></td></tr>
+                <tr><td>F1</td><td>Weiß</td><td>2-Zi.-Wohnung</td><td>€ 850</td><td>2021</td><td><span class="b bg">Aktiv</span></td></tr>
+                <tr><td>Z33</td><td>Instamsys GmbH</td><td>Bürofläche</td><td>€ 2.200</td><td>2019</td><td><span class="b bg">Aktiv</span></td></tr>
+                <tr><td>Z35</td><td>Mieterhöhungen Kemnat (diverse)</td><td>4 Einh.</td><td>€ 3.100</td><td>versch.</td><td><span class="b bg">Aktiv</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="tv-leer" class="hide">
+        <div class="alert alert-r">⚠️&nbsp;<div><strong>3 Leerstände</strong> im Gesamtportfolio — geschätzter Mietausfall: ~€ 3.950/Monat</div></div>
+        <div class="card">
+          <div class="cb" style="padding:0">
+            <table>
+              <thead><tr><th>Objekt</th><th>Einheit</th><th>Fläche</th><th>Leer seit</th><th>Marktmiete</th><th>Aktion</th></tr></thead>
+              <tbody>
+                <tr><td>H184a</td><td>EG Wohnung</td><td>~65 m²</td><td>Mrz 2026</td><td>€ 1.100/Mo</td><td><button class="btn btn-gold btn-xs" onclick="go('marketing',document.querySelectorAll('.nav-btn')[8])">📢 Exposé</button></td></tr>
+                <tr><td>W37</td><td>Bürofläche 2.OG (119 m²)</td><td>119 m²</td><td>Jan 2026</td><td>€ 1.800/Mo</td><td><button class="btn btn-gold btn-xs" onclick="go('marketing',document.querySelectorAll('.nav-btn')[8])">📢 Exposé</button></td></tr>
+                <tr><td>Z35</td><td>Einheit 3</td><td>~80 m²</td><td>Feb 2026</td><td>€ 1.050/Mo</td><td><button class="btn btn-gold btn-xs" onclick="go('marketing',document.querySelectorAll('.nav-btn')[8])">📢 Exposé</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="tv-erh" class="hide">
+        <div class="alert alert-s">✅&nbsp;<div>Mieterhöhungs-Übersicht 2026 erstellt — <strong>8 Erhöhungen geplant</strong>, davon 5 versendet</div></div>
+        <div class="card">
+          <div class="cb" style="padding:0">
+            <table>
+              <thead><tr><th>Mieter</th><th>Objekt</th><th>Miete alt</th><th>Miete neu</th><th>+%</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>Hasche</td><td>EN</td><td>€ 820</td><td>€ 895</td><td>+9,1%</td><td><span class="b bg">Versendet ✓</span></td></tr>
+                <tr><td>Korte</td><td>EN</td><td>€ 750</td><td>€ 820</td><td>+9,3%</td><td><span class="b bg">Versendet ✓</span></td></tr>
+                <tr><td>Tutic</td><td>EN</td><td>€ 680</td><td>€ 745</td><td>+9,6%</td><td><span class="b bg">Versendet ✓</span></td></tr>
+                <tr><td>Houston</td><td>EN</td><td>€ 780</td><td>€ 850</td><td>+9,0%</td><td><span class="b bg">Versendet ✓</span></td></tr>
+                <tr><td>Singert (Stlpl.)</td><td>EN</td><td>€ 75</td><td>€ 85</td><td>+13,3%</td><td><span class="b bg">Versendet ✓</span></td></tr>
+                <tr><td>Blersch</td><td>EN</td><td>€ 710</td><td>€ 775</td><td>+9,2%</td><td><span class="b by">Noch ausstehend</span></td></tr>
+                <tr><td>Fröhlich</td><td>EN</td><td>€ 695</td><td>€ 760</td><td>+9,4%</td><td><span class="b by">Noch ausstehend</span></td></tr>
+                <tr><td>Giovanni Restaurant</td><td>EN Gewerbe</td><td>€ 2.800</td><td>€ 3.050</td><td>+8,9%</td><td><span class="b bb">In Prüfung</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="tv-ueb" class="hide">
+        <div class="card">
+          <div class="ch"><div class="ct">🔑 Übergabe- &amp; Rückgabeprotokolle</div><button class="btn btn-navy btn-xs">+ Neues Protokoll</button></div>
+          <div class="cb" style="padding:0">
+            <table>
+              <thead><tr><th>Objekt</th><th>Mieter</th><th>Art</th><th>Datum</th><th>Protokoll</th></tr></thead>
+              <tbody>
+                <tr><td>H184a</td><td>Martens / Eisenmann</td><td>Einzug</td><td>2024</td><td><span class="b bg">Vorhanden</span></td></tr>
+                <tr><td>H182</td><td>Razi Ennoumi</td><td>Einzug</td><td>2023</td><td><span class="b bg">Vorhanden</span></td></tr>
+                <tr><td>R154 3.OG li.</td><td>Ukic</td><td>Auszug</td><td>2025</td><td><span class="b by">In Bearbeitung</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ FINANZEN ════ -->
+    <div id="s-finanzen" class="hide">
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-lbl">Soll-Miete/Mo</div><div class="kpi-val">€ 58.400</div><div class="kpi-note">alle Portfolios</div></div>
+        <div class="kpi"><div class="kpi-lbl">Mietausfall</div><div class="kpi-val" style="color:var(--red)">€ 3.950</div><div class="kpi-note">3 Leerstände</div></div>
+        <div class="kpi"><div class="kpi-lbl">Ist-Einnahmen YTD</div><div class="kpi-val">€ 231k</div><div class="kpi-note">Jan–Mai 2026</div></div>
+        <div class="kpi"><div class="kpi-lbl">Instandhaltung YTD</div><div class="kpi-val">€ 14.200</div><div class="kpi-note">Handwerker + Material</div></div>
+        <div class="kpi"><div class="kpi-lbl">Heizöl &amp; Strom</div><div class="kpi-val">€ 9.800</div><div class="kpi-note">YTD Energiekosten</div></div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="ch"><div class="ct">📊 Einnahmen nach Portfolio 2026</div></div>
+          <div class="cb"><div class="chart-wrap"><canvas id="portChart"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ct">💸 Kostenübersicht YTD 2026</div></div>
+          <div class="cb">
+            <div class="nk-row"><span style="font-size:12px">🔧 Handwerker / Reparaturen</span><strong>€ 14.200</strong></div>
+            <div class="nk-row"><span style="font-size:12px">🏢 Hausverwaltungskosten</span><strong>€ 8.400</strong></div>
+            <div class="nk-row"><span style="font-size:12px">🛡️ Versicherungen</span><strong>€ 6.300</strong></div>
+            <div class="nk-row"><span style="font-size:12px">🏛️ Grundsteuer</span><strong>€ 11.200</strong></div>
+            <div class="nk-row"><span style="font-size:12px">⚡ Heizöl &amp; Strom</span><strong>€ 9.800</strong></div>
+            <div class="nk-row"><span style="font-size:12px">🌿 Gartenpflege / Hausmeister</span><strong>€ 4.600</strong></div>
+            <div class="nk-row" style="font-weight:700"><span style="font-size:12px">Gesamt Kosten YTD</span><strong style="color:var(--red)">€ 54.500</strong></div>
+            <div class="nk-row" style="font-weight:700;border-top:2px solid var(--navy)"><span style="font-size:12px">💰 Cashflow YTD (Netto)</span><strong style="color:var(--green)">€ 176.500</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="ct">🧾 Dauermietrechnungen &amp; Regelmäßige Zahlungen</div></div>
+        <div class="cb" style="padding:0">
+          <table>
+            <thead><tr><th>Empfänger</th><th>Objekt</th><th>Betrag</th><th>Intervall</th><th>Nächste Zahlung</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>Instamsys GmbH</td><td>EN Verwaltung</td><td>€ 580</td><td>Monatlich</td><td>01.06.2026</td><td><span class="b bg">Aktiv</span></td></tr>
+              <tr><td>NK-Nachzahlung Instamsys 2023</td><td>EN Verwaltung</td><td>€ 1.240</td><td>Einmalig</td><td>Abgerechnet</td><td><span class="b bx">Archiv</span></td></tr>
+              <tr><td>Grundsteuer EN Portfolio</td><td>alle EN Obj.</td><td>€ 2.240</td><td>Vierteljährl.</td><td>15.06.2026</td><td><span class="b bg">Aktiv</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ NEBENKOSTEN ════ -->
+    <div id="s-nebenkosten" class="hide">
+      <div class="alert alert-r">🚨&nbsp;<div><strong>NK-Abrechnung 2024 für Zeppelinstraße 33 noch ausstehend!</strong> Gesetzliche Frist: 30.06.2026 — noch 55 Tage</div></div>
+
+      <div class="tabs">
+        <button class="tab on" onclick="tab(this,'tn-status')">📋 Abrechnungsstatus</button>
+        <button class="tab" onclick="tab(this,'tn-calc')">🧮 NK-Rechner</button>
+        <button class="tab" onclick="tab(this,'tn-zaehler')">🔢 Zählerstände</button>
+      </div>
+
+      <div id="tn-status">
+        <div class="card">
+          <div class="cb" style="padding:0">
+            <table>
+              <thead><tr><th>Objekt</th><th>Jahr</th><th>Status</th><th>Verteiler</th><th>Frist</th><th>Aktion</th></tr></thead>
+              <tbody>
+                <tr><td>R154 3.OG li.</td><td>2023</td><td><span class="b bg">Erstellt ✓</span></td><td>Minol</td><td>—</td><td><button class="btn btn-outline btn-xs">PDF öffnen</button></td></tr>
+                <tr><td>W37 — Giese</td><td>2023</td><td><span class="b bg">Erstellt ✓</span></td><td>Minol</td><td>—</td><td><button class="btn btn-outline btn-xs">PDF öffnen</button></td></tr>
+                <tr><td>EN Gesamt</td><td>2024</td><td><span class="b bb">In Arbeit</span></td><td>Zählerstände EN/NE 12.24</td><td>30.06.2026</td><td><button class="btn btn-navy btn-xs">Bearbeiten</button></td></tr>
+                <tr><td><strong>Z33 Zeppelinstr.</strong></td><td><strong>2024</strong></td><td><span class="b br">⚠️ AUSSTEHEND</span></td><td>—</td><td><strong style="color:var(--red)">30.06.2026</strong></td><td><button class="btn btn-gold btn-xs" onclick="tab(document.querySelectorAll('#s-nebenkosten .tab')[1],'tn-calc')">Jetzt erstellen →</button></td></tr>
+                <tr><td>H184a</td><td>2025</td><td><span class="b bx">Noch nicht fällig</span></td><td>—</td><td>Jun 2027</td><td>—</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="tn-calc" class="hide">
+        <div class="card">
+          <div class="ch"><div class="ct">🧮 Nebenkosten-Abrechnung erstellen</div></div>
+          <div class="cb">
+            <div class="frow">
+              <div class="fg"><label>Objekt</label><select><option>Zeppelinstraße 33 (NC)</option><option>Haußmannstraße 182 (EN)</option><option>Rotenbergstraße 154 (EN)</option><option>Wollgrasweg 37 (EN)</option></select></div>
+              <div class="fg"><label>Abrechnungsjahr</label><select><option>2024</option><option>2025</option></select></div>
+            </div>
+            <div class="frow">
+              <div class="fg"><label>Heizkosten gesamt (€)</label><input type="text" placeholder="z.B. 8.400"></div>
+              <div class="fg"><label>Wasser / Abwasser (€)</label><input type="text" placeholder="z.B. 1.200"></div>
+            </div>
+            <div class="frow">
+              <div class="fg"><label>Müllabfuhr / Entsorgung (€)</label><input type="text" placeholder="z.B. 840"></div>
+              <div class="fg"><label>Hausmeister / Gartenpflege (€)</label><input type="text" placeholder="z.B. 2.400"></div>
+            </div>
+            <div class="frow">
+              <div class="fg"><label>Gebäudeversicherung (€)</label><input type="text" placeholder="z.B. 1.800"></div>
+              <div class="fg"><label>Gesamtfläche Objekt (m²)</label><input type="text" placeholder="z.B. 520"></div>
+            </div>
+            <button class="btn btn-navy" onclick="aiNK()">🤖 KI: NK-Abrechnung berechnen &amp; Briefe erstellen</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="tn-zaehler" class="hide">
+        <div class="card">
+          <div class="ch"><div class="ct">🔢 Zählerstände EN/NE — Stand Dez. 2024</div><button class="btn btn-outline btn-xs">+ Neue Ablesung</button></div>
+          <div class="cb">
+            <div class="alert alert-i">ℹ️ Zählerstände EN NE 12.24 — PDF vorhanden. Neue Ablesungen können hier erfasst werden.</div>
+            <div class="frow">
+              <div class="fg"><label>Objekt</label><select><option>Haußmannstr. 180</option><option>Haußmannstr. 182</option><option>Wollgrasweg 37</option><option>Zeppelinstr. 33</option></select></div>
+              <div class="fg"><label>Datum der Ablesung</label><input type="text" placeholder="TT.MM.JJJJ"></div>
+            </div>
+            <div class="frow">
+              <div class="fg"><label>Strom (kWh)</label><input type="text" placeholder="Zählerstand"></div>
+              <div class="fg"><label>Wasser / Warmwasser (m³)</label><input type="text" placeholder="Zählerstand"></div>
+            </div>
+            <div class="fg"><label>Heizung (falls zentral, kWh)</label><input type="text" placeholder="Zählerstand oder Minol-Wert"></div>
+            <button class="btn btn-navy">💾 Zählerstand speichern</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ HANDWERKER ════ -->
+    <div id="s-handwerker" class="hide">
+      <div class="grid2">
+        <div>
+          <div class="card">
+            <div class="ch"><div class="ct">🔧 Handwerker-Stammdaten</div><button class="btn btn-navy btn-xs">+ Hinzufügen</button></div>
+            <div class="cb">
+              <div class="hw-card"><div class="hw-av">SB</div><div style="flex:1"><div style="font-size:13px;font-weight:600">Stefan Beck — Sanitär &amp; Heizung</div><div style="font-size:11px;color:var(--muted)">☎ 0711 / 44 55 66 · Reaktion: ~1 Tag · Heizung, Sanitär, Rohre</div></div><span class="b bg">Aktiv</span></div>
+              <div class="hw-card"><div class="hw-av">MK</div><div style="flex:1"><div style="font-size:13px;font-weight:600">Müller &amp; Kollegen — Elektro</div><div style="font-size:11px;color:var(--muted)">☎ 0711 / 88 99 00 · E-Check zertifiziert · Sicherungsanlagen</div></div><span class="b bg">Aktiv</span></div>
+              <div class="hw-card"><div class="hw-av">FD</div><div style="flex:1"><div style="font-size:13px;font-weight:600">Fischer Dach GmbH</div><div style="font-size:11px;color:var(--muted)">☎ 07151 / 22 33 44 · Dach, Spengler, Abdichtung</div></div><span class="b bg">Aktiv</span></div>
+              <div class="hw-card"><div class="hw-av">PM</div><div style="flex:1"><div style="font-size:13px;font-weight:600">Profi-Maler Stuttgart</div><div style="font-size:11px;color:var(--muted)">☎ 0711 / 55 44 33 · Innen + Außen · Tapezieren</div></div><span class="b by">Anfrage läuft</span></div>
+              <div class="hw-card"><div class="hw-av">SL</div><div style="flex:1"><div style="font-size:13px;font-weight:600">Schlüsseldienst Lange</div><div style="font-size:11px;color:var(--muted)">☎ 0711 / 33 22 11 · 24h Notfall · Schlösser, Türen</div></div><span class="b bx">Reserve</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="ch"><div class="ct">📋 Aktuelle Aufträge</div><button class="btn btn-navy btn-xs">+ Neuer Auftrag</button></div>
+            <div class="cb" style="padding:0">
+              <table>
+                <thead><tr><th>Objekt</th><th>Beschreibung</th><th>HW</th><th>Status</th><th>€</th></tr></thead>
+                <tbody>
+                  <tr><td>H182</td><td>Bad OG — Dichtung erneuern</td><td>Beck</td><td><span class="b by">Laufend</span></td><td>420</td></tr>
+                  <tr><td>R154</td><td>E-Check Sicherungskasten</td><td>Müller</td><td><span class="b bg">Fertig ✓</span></td><td>680</td></tr>
+                  <tr><td>W37</td><td>Treppenhaus streichen</td><td>PM</td><td><span class="b bb">Angebot</span></td><td>2.800</td></tr>
+                  <tr><td>Z33</td><td>Dachabdichtung Inspektion</td><td>Fischer</td><td><span class="b by">Ausst.</span></td><td>350</td></tr>
+                  <tr><td>H107</td><td>Heizung Jahreswartung</td><td>Beck</td><td><span class="b bg">Fertig ✓</span></td><td>890</td></tr>
+                  <tr><td>H184a</td><td>Bad EG vorbereiten (Leerstand)</td><td>Beck</td><td><span class="b bb">Geplant</span></td><td>~3.200</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="ch"><div class="ct">📨 Neuen Auftrag erstellen</div></div>
+            <div class="cb">
+              <div class="fg"><label>Objekt</label><select><option>— Objekt wählen —</option><option>H180 Haußmannstr. 180</option><option>H182 Haußmannstr. 182</option><option>R154 Rotenbergstr. 154</option><option>W37 Wollgrasweg 37</option><option>Z33 Zeppelinstr. 33</option></select></div>
+              <div class="fg"><label>Beschreibung der Maßnahme</label><textarea rows="2" placeholder="z.B. Wasserschaden Bad 2. OG — Dichtung erneuern und Fliesen prüfen"></textarea></div>
+              <div class="frow">
+                <div class="fg"><label>Handwerker</label><select><option>Stefan Beck (Sanitär)</option><option>Müller &amp; Kollegen (Elektro)</option><option>Fischer Dach GmbH</option><option>Profi-Maler Stuttgart</option></select></div>
+                <div class="fg"><label>Priorität</label><select><option>Normal (3–5 Tage)</option><option>Dringend (1–2 Tage)</option><option>Notfall (heute)</option></select></div>
+              </div>
+              <button class="btn btn-navy" onclick="auftragsMsg()">📨 Auftragsmail via KI generieren</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ RENOVIERUNG ════ -->
+    <div id="s-renovierung" class="hide">
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-lbl">Laufende Projekte</div><div class="kpi-val">2</div></div>
+        <div class="kpi"><div class="kpi-lbl">Budget gesamt</div><div class="kpi-val">€ 64k</div></div>
+        <div class="kpi"><div class="kpi-lbl">Ausgegeben YTD</div><div class="kpi-val">€ 31k</div><div class="kpi-note">48% des Budgets</div></div>
+        <div class="kpi"><div class="kpi-lbl">Geplante Maßnahmen</div><div class="kpi-val">3</div><div class="kpi-note">ab Herbst 2026</div></div>
+        <div class="kpi"><div class="kpi-lbl">Gepl. Investitionen</div><div class="kpi-val">€ 69k</div><div class="kpi-note">3 Folgeprojekte</div></div>
+      </div>
+
+      <div class="reno-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
+          <div><div style="font-size:14px;font-weight:600">🏗️ W37 — Treppenhaus Sanierung</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Wollgrasweg 37 · Budget: € 18.000 · Start: April 2026 · Profi-Maler Stuttgart</div></div>
+          <span class="b by">Laufend</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px"><span>Fortschritt</span><span><strong>35%</strong> — Malerarbeiten laufend</span></div>
+        <div class="prog"><div class="prog-fill" style="width:35%"></div></div>
+        <div style="display:flex;gap:10px;margin-top:10px;font-size:11px;flex-wrap:wrap">
+          <span style="color:var(--green)">✅ Planung</span><span style="color:var(--green)">✅ Beauftragung</span><span style="color:var(--amber)">⏳ Malerarbeiten</span><span style="color:var(--muted)">⬜ Bodenbelag</span><span style="color:var(--muted)">⬜ Abnahme</span>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--muted)">💰 Ausgegeben: € 6.300 von € 18.000 (35%)</div>
+      </div>
+
+      <div class="reno-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
+          <div><div style="font-size:14px;font-weight:600">🔌 R154 — Elektrik-Modernisierung</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Rotenbergstraße 154 · Budget: € 46.000 · Start: März 2026 · Müller Elektro</div></div>
+          <span class="b bb">60% fertig</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px"><span>Fortschritt</span><span><strong>60%</strong> — Unterverteilungen in Arbeit</span></div>
+        <div class="prog"><div class="prog-fill" style="width:60%;background:var(--blue)"></div></div>
+        <div style="display:flex;gap:10px;margin-top:10px;font-size:11px;flex-wrap:wrap">
+          <span style="color:var(--green)">✅ Bestandsaufnahme</span><span style="color:var(--green)">✅ Planung</span><span style="color:var(--green)">✅ Hauptverteilung</span><span style="color:var(--amber)">⏳ Unterverteilungen</span><span style="color:var(--muted)">⬜ Abnahme &amp; E-Check</span>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--muted)">💰 Ausgegeben: € 24.700 von € 46.000 (54%)</div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="ct">📋 Geplante Maßnahmen — Herbst/Winter 2026</div><button class="btn btn-navy btn-xs">+ Projekt anlegen</button></div>
+        <div class="cb" style="padding:0">
+          <table>
+            <thead><tr><th>Objekt</th><th>Maßnahme</th><th>Geplantes Budget</th><th>Priorität</th><th>Termin</th></tr></thead>
+            <tbody>
+              <tr><td>Z33</td><td>Dachsanierung (Abdichtung + Neueindeckung)</td><td>€ 35.000</td><td><span class="b br">Hoch</span></td><td>Sep 2026</td></tr>
+              <tr><td>H184a</td><td>Bad EG renovieren (Leerstand aufwerten)</td><td>€ 12.000</td><td><span class="b by">Mittel</span></td><td>Jul 2026</td></tr>
+              <tr><td>H107</td><td>Fassade streichen + Dämmung prüfen</td><td>€ 22.000</td><td><span class="b bb">Niedrig</span></td><td>Okt 2026</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ MARKETING ════ -->
+    <div id="s-marketing" class="hide">
+      <div class="grid2">
+        <div>
+          <div class="expose-hero">
+            <div style="font-size:9px;opacity:.65;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px">Exposé-Vorschau</div>
+            <div style="font-size:19px;font-weight:700;margin-bottom:3px">Bürofläche EG · 119 m²</div>
+            <div style="font-size:12px;opacity:.8">Wollgrasweg 37 · Stuttgart-Vaihingen · Schaufenster</div>
+            <div style="display:flex;gap:18px;margin-top:13px;font-size:11px">
+              <div><div style="opacity:.6">Kaltmiete</div><div style="font-size:20px;font-weight:700">€ 1.800</div></div>
+              <div><div style="opacity:.6">NK ca.</div><div style="font-size:20px;font-weight:700">€ 280</div></div>
+              <div><div style="opacity:.6">Fläche</div><div style="font-size:20px;font-weight:700">119 m²</div></div>
+            </div>
+            <button class="btn btn-gold" style="margin-top:13px;font-size:12px" onclick="go('ai',document.querySelectorAll('.nav-btn')[9]);setTimeout(()=>aiSend('Erstelle einen vollständigen Exposé-Text für die 119m² Bürofläche im Wollgrasweg 37, EG, mit Schaufensterfassade, Teeküche, Kaltmiete 1.800€ / NK 280€'),400)">🤖 Exposé-Text generieren →</button>
+          </div>
+
+          <div class="card">
+            <div class="ch"><div class="ct">📄 Exposé-Generator</div></div>
+            <div class="cb">
+              <div class="fg"><label>Objekt / Einheit</label><select><option>W37 — EG 119 m² Büro/Schaufenster</option><option>H184a — EG Wohnung 65 m²</option><option>Z35 — Einheit 3, 80 m²</option></select></div>
+              <div class="frow">
+                <div class="fg"><label>Kaltmiete (€/Mo)</label><input type="text" value="1.800"></div>
+                <div class="fg"><label>NK-Vorauszahlung (€/Mo)</label><input type="text" value="280"></div>
+              </div>
+              <div class="fg"><label>Besonderheiten (KI nutzt diese für den Text)</label><textarea rows="2" placeholder="Schaufenster, Klimaanlage, ebenerdig, Parken, ÖPNV..."></textarea></div>
+              <button class="btn btn-navy" onclick="go('ai',document.querySelectorAll('.nav-btn')[9]);setTimeout(()=>aiSend('Erstelle professionellen Exposé-Text für die Bürofläche W37 EG 119m², Kaltmiete 1.800€, Schaufenster, Teeküche, Klimaanlage, ÖPNV-nah'),400)">🤖 KI-Exposé generieren</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="ch"><div class="ct">📢 Aktive Inserate</div><button class="btn btn-navy btn-xs">+ Inserieren</button></div>
+            <div class="cb" style="padding:0">
+              <table>
+                <thead><tr><th>Einheit</th><th>Plattform</th><th>Anfragen</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td>W37 EG 119 m²</td><td>ImmoScout + eBay</td><td>3</td><td><span class="b bg">Online</span></td></tr>
+                  <tr><td>H184a EG ~65 m²</td><td>ImmoScout</td><td>1</td><td><span class="b by">Neu</span></td></tr>
+                  <tr><td>Z35 Einheit 3</td><td>Privat (geplant)</td><td>0</td><td><span class="b bb">Vorbereitung</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="ch"><div class="ct">📨 Interessenten &amp; Anfragen</div></div>
+            <div class="cb" style="padding:0">
+              <table>
+                <thead><tr><th>Name</th><th>Objekt</th><th>Datum</th><th>Aktion</th></tr></thead>
+                <tbody>
+                  <tr><td>Max Muster</td><td>W37 EG</td><td>02.05.26</td><td><button class="btn btn-outline btn-xs">📅 Besichtigung</button></td></tr>
+                  <tr><td>Firma XY GmbH</td><td>W37 EG</td><td>01.05.26</td><td><button class="btn btn-outline btn-xs">📅 Besichtigung</button></td></tr>
+                  <tr><td>Sabine K.</td><td>H184a EG</td><td>04.05.26</td><td><button class="btn btn-outline btn-xs">📧 Kontakt</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:14px">
+            <div class="ch"><div class="ct">🤖 KI: Inserat-Text schreiben</div></div>
+            <div class="cb">
+              <div class="fg"><label>Für welches Objekt?</label><select><option>W37 EG Büro 119 m²</option><option>H184a Wohnung EG</option><option>Z35 Einheit 3</option></select></div>
+              <div class="fg"><label>Plattform-Stil</label><select><option>ImmoScout24 (professionell)</option><option>eBay Kleinanzeigen (informell)</option><option>Social Media (Instagram/LinkedIn)</option></select></div>
+              <button class="btn btn-gold" onclick="go('ai',document.querySelectorAll('.nav-btn')[9]);setTimeout(()=>aiSend('Erstelle einen ImmoScout24-Inserat-Text für die 119m² Bürofläche Wollgrasweg 37, EG Stuttgart-Vaihingen. Kaltmiete 1.800€, NK 280€, Schaufenster, Teeküche, Parkplätze vorhanden.'),400)">🤖 Inserat-Text erstellen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ KI-ASSISTENT ════ -->
+    <div id="s-ai" class="hide">
+      <div class="ai-wrap">
+        <div class="ai-col">
+          <div class="ai-msgs" id="aiMsgs">
+            <div class="msg a">
+              <div class="av">🤖</div>
+              <div class="bubble">
+                <strong>Guten Tag, Benjamin!</strong><br><br>
+                Ich bin dein persönlicher KI-Assistent für das <strong>Enzmann Real Estate Portfolio</strong>. Ich kenne alle deine 13 Objekte, 58 Mieter, laufenden Projekte und offenen Aufgaben.<br><br>
+                <strong>Was ich für dich tun kann:</strong><br>
+                ✉️ Mieterhöhungs- &amp; Kündigungsbriefe verfassen<br>
+                🧮 Nebenkosten berechnen &amp; Abrechnungen erstellen<br>
+                📢 Exposés &amp; Inserat-Texte generieren<br>
+                ⚖️ Mietrechtsfragen beantworten (§ 558 BGB etc.)<br>
+                🔧 Handwerker-Aufträge formulieren<br>
+                🏗️ Renovierungspläne &amp; Budgets erstellen<br>
+                📊 Finanz- &amp; Rendite-Analysen durchführen<br><br>
+                <em>Stelle mir einfach eine Frage oder nutze die Schnell-Aktionen rechts.</em>
+              </div>
+            </div>
+          </div>
+          <div class="ai-row">
+            <input class="ai-inp" id="aiInp" placeholder="Frag mich alles — Mietrecht, NK, Exposés, Handwerker, Finanzen..." onkeydown="if(event.key==='Enter')aiSend()">
+            <button class="btn btn-navy" onclick="aiSend()">Senden →</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="card" style="margin-bottom:12px">
+            <div class="ch"><div class="ct">⚡ Schnell-Aktionen</div></div>
+            <div class="cb" style="padding:10px">
+              <button class="quick-btn" onclick="aiSend('Schreibe einen Mieterhöhungsbrief für Mieter Blersch (H182), Erhöhung von 710€ auf 775€ zum 01.08.2026 gemäß § 558 BGB Mietspiegel Stuttgart')">✉️ Mieterhöhungsbrief Blersch</button>
+              <button class="quick-btn" onclick="aiSend('Erstelle einen professionellen Exposé-Text für die 119m² Bürofläche Wollgrasweg 37 EG, Stuttgart-Vaihingen. Kaltmiete 1.800€, NK 280€, Schaufenster, Teeküche, Parkplätze')">📢 Exposé W37 119m² Büro</button>
+              <button class="quick-btn" onclick="aiSend('Formuliere eine Kündigungsbestätigung für das Kleinlager an Frau Wunderhübsch mit Übergabetermin und Hinweis auf Endreinigung')">📋 Kleinlager-Kündigung versenden</button>
+              <button class="quick-btn" onclick="aiSend('Was sind meine wichtigsten offenen Aufgaben diese Woche? Bitte priorisiert nach Dringlichkeit.')">📋 Aufgaben diese Woche</button>
+              <button class="quick-btn" onclick="aiSend('Berechne die NK-Umlage für Zeppelinstraße 33: Heizung 8.400€, Wasser 1.200€, Müll 840€, Hausmeister 2.400€, Versicherung 1.800€. Gesamtfläche 520m², 6 Einheiten.')">🧮 NK-Abrechnung Z33 berechnen</button>
+              <button class="quick-btn" onclick="aiSend('Erstelle einen Handwerker-Auftrag für Beck Sanitär: Wasserschaden Bad OG H182, Dichtung Dusche und Silikonfugen erneuern, dringend, mit Bitte um Terminbestätigung')">🔧 Handwerker-Auftrag formulieren</button>
+              <button class="quick-btn" onclick="aiSend('Wie hoch darf ich die Miete in Stuttgart-Mitte (H107) für eine 85m² Wohnung nach dem Stuttgarter Mietspiegel 2026 maximal erhöhen? Aktuelle Miete: 920€')">⚖️ Mietspiegel-Frage Stuttgart</button>
+              <button class="quick-btn" onclick="aiSend('Erstelle einen Renovierungsplan für die Dachsanierung Z33, Gesamtbudget 35.000€, geplant September 2026. Mit Phasen, Zeitplan und Kostenverteilung.')">🏗️ Renovierungsplan Z33 Dach</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="ch"><div class="ct">📊 KI-Kontext</div></div>
+            <div class="cb" style="font-size:12px;display:flex;flex-direction:column;gap:5px">
+              <div>🏢 <strong>13 Objekte</strong> bekannt</div>
+              <div>👥 <strong>58 aktive Mieter</strong></div>
+              <div>📄 <strong>80+ Dokumente</strong> indexiert</div>
+              <div>🔧 <strong>5 Handwerker</strong> registriert</div>
+              <div>⚠️ <strong>3 NK-Abr.</strong> ausstehend</div>
+              <div>🏗️ <strong>2 Reno-Projekte</strong> aktiv</div>
+              <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">Portfolios: EN · NC · AKE · ENZO RE<br>Stand: Mai 2026</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<script>
+// ── NAVIGATION ──
+const meta = {
+  dashboard:    ['Dashboard','Gesamtübersicht aller Portfolios · Benjamin Enzmann'],
+  objekte:      ['Objekte & Portfolio','13 Objekte · EN Verwaltung · NC · AKE · ENZO'],
+  vermietung:   ['Vermietung','58 aktive Mietverhältnisse · 3 Leerstände'],
+  finanzen:     ['Finanzen','Einnahmen, Ausgaben & Controlling 2026'],
+  nebenkosten:  ['Nebenkosten','Abrechnungen, Zählerstände & NK-Rechner'],
+  handwerker:   ['Handwerker & Facility','Aufträge, Gewerke & Partnerunternehmen'],
+  renovierung:  ['Renovierung & Bau','Projekte, Budgets & Fortschritt'],
+  marketing:    ['Marketing & Exposés','Inserate, Anfragen & Exposé-Generator'],
+  ai:           ['KI-Assistent','Dein persönlicher Immobilien-KI für das Enzmann-Portfolio']
+};
+
+function go(id, el) {
+  document.querySelectorAll('[id^="s-"]').forEach(s => s.classList.add('hide'));
+  document.getElementById('s-' + id).classList.remove('hide');
+  document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const m = meta[id];
+  document.getElementById('tb-title').textContent = m[0];
+  document.getElementById('tb-sub').textContent = m[1];
+  if (id === 'dashboard') setTimeout(initRev, 100);
+  if (id === 'finanzen') setTimeout(initPort, 100);
+}
+
+// ── TABS ──
+function tab(btn, id) {
+  // hide all sibling tab panels
+  const root = btn.closest('[id^="s-"]');
+  // find all tab panes in this section
+  root.querySelectorAll('[id^="t"]').forEach(p => {
+    if (p.id && p.id !== id) p.classList.add('hide');
+  });
+  const target = document.getElementById(id);
+  if (target) target.classList.remove('hide');
+  btn.closest('.tabs').querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+// ── TASK CHECK ──
+function doneTask(el) {
+  el.style.background = 'var(--green)';
+  el.style.borderColor = 'var(--green)';
+  el.style.borderRadius = '3px';
+  el.parentElement.style.opacity = '.45';
+  el.parentElement.style.textDecoration = 'line-through';
+}
+
+// ── CHARTS ──
+let rC, pC;
+function initRev() {
+  const ctx = document.getElementById('revChart');
+  if (!ctx || rC) return;
+  rC = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Jan','Feb','Mär','Apr','Mai','Jun'],
+      datasets: [{
+        label: 'Mieteinnahmen (€)',
+        data: [54200,55800,57100,57900,58400,58400],
+        backgroundColor: '#1b3358',
+        borderRadius: 5
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min: 50000, ticks: { callback: v => '€' + (v/1000).toFixed(0) + 'k', font: { size: 10 } } },
+        x: { ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+function initPort() {
+  const ctx = document.getElementById('portChart');
+  if (!ctx || pC) return;
+  pC = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['EN Verwaltung','NC Kemnat','AKE Hagnau'],
+      datasets: [{ data: [43200,12800,2400], backgroundColor: ['#1b3358','#c9a227','#3b82f6'], borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+    }
+  });
+}
+
+// ── AI CHAT ──
+const responses = {
+  mieterhöhung: `<strong>Mieterhöhungsbrief — Mieter Blersch</strong><br><br>Stuttgart, den 06. Mai 2026<br><br><strong>Mieterhöhungsverlangen gemäß § 558 BGB</strong><br><br>Sehr geehrte/r Herr/Frau Blersch,<br><br>hiermit verlange ich die Zustimmung zur Erhöhung der Nettokaltmiete für die von Ihnen gemietete Wohnung (Objekt H182 Haußmannstraße 182) zum <strong>01. August 2026</strong>:<br><br>• Bisherige Kaltmiete: <strong>710,00 €</strong> monatlich<br>• Neue Kaltmiete ab 01.08.2026: <strong>775,00 €</strong> monatlich<br>• Erhöhungsbetrag: <strong>65,00 €</strong> (+9,2 %)<br><br>Begründung: Die neue Miete entspricht der ortsüblichen Vergleichsmiete gemäß <strong>Stuttgarter Mietspiegel 2026</strong>. Die Kappungsgrenze (20% in 3 Jahren) wird eingehalten. Die Erhöhung tritt in Kraft, sofern Sie nicht innerhalb von 2 Monaten nach Zugang widersprechen.<br><br>Mit freundlichen Grüßen<br>EN Verwaltung GmbH & Co. KG`,
+
+  exposé: `<strong>Exposé-Text: Bürofläche Wollgrasweg 37, EG</strong><br><br><strong>Moderne Büro-/Gewerbefläche mit Schaufenster — 119 m²</strong><br>Stuttgart-Vaihingen, Wollgrasweg 37<br><br>Repräsentative Erdgeschossfläche in bester Lage Vaihingen — ideal für Büro, Praxis, Showroom oder Einzelhandel. Die Fläche besticht durch eine großzügige, helle Raumaufteilung mit Schaufensterfassade.<br><br><strong>Highlights:</strong><br>• 119 m² zusammenhängende Nutzfläche, ebenerdig<br>• Schaufensterfassade mit hoher Sichtbarkeit und Passantenfrequenz<br>• Voll ausgestattete Teeküche vorhanden<br>• Klimaanlage / Heizung vorhanden<br>• Ausreichend Parkplätze direkt vor dem Objekt<br>• ÖPNV-Anbindung in 2 Gehminuten (S-Bahn / Bus)<br>• Sofort beziehbar<br><br><strong>Konditionen:</strong><br>• Kaltmiete: <strong>€ 1.800 / Monat</strong><br>• NK-Vorauszahlung: ca. € 280/Mo<br>• Kaution: 3 Monatskaltmieten (€ 5.400)<br>• Mietbeginn: nach Vereinbarung<br><br>Kontakt: EN Verwaltung GmbH & Co. KG · Stuttgart`,
+
+  kündigung: `<strong>Kündigungsbestätigung Kleinlager — Frau Wunderhübsch</strong><br><br>Stuttgart, den 06. Mai 2026<br><br>Sehr geehrte Frau Wunderhübsch,<br><br>wir bestätigen hiermit den Eingang Ihrer Kündigung des Mietverhältnisses für das Kleinlager und nehmen diese zum nächstmöglichen Termin an.<br><br><strong>Übergabetermin:</strong> bitte vereinbaren Sie einen Termin bis spätestens <strong>30. Juni 2026</strong>.<br><br>Bitte beachten Sie bei der Übergabe:<br>• Das Lager ist <strong>vollständig beräumt</strong> zu übergeben<br>• Endreinigung des Lagerraums erforderlich<br>• Alle Schlüssel (inkl. Duplikate) sind zurückzugeben<br>• Eventuelle Schäden werden dokumentiert<br><br>Die Mietkaution wird nach Übergabe und Prüfung zurückgezahlt.<br><br>Mit freundlichen Grüßen<br>EN Verwaltung GmbH & Co. KG`,
+
+  aufgaben: `<strong>Ihre wichtigsten Aufgaben — KW 19/2026</strong><br><br><span style="color:#b91c1c">🔴 SOFORT (diese Woche):</span><br>1. <strong>Kleinlager-Kündigungen versenden</strong> — Wunderhübsch, Wieacker, Heitmann, Breiding, Vogelei (Dokumente liegen fertig vor)<br>2. <strong>Übergabeprotokoll H184a</strong> mit Martens/Eisenmann vereinbaren und fertigstellen<br><br><span style="color:#d97706">🟡 DIESE WOCHE:</span><br>3. <strong>Mieterhöhung Blersch & Fröhlich</strong> absenden — Briefe liegen bereit<br>4. <strong>NK-Abrechnung Z33 starten</strong> — Frist 30.06. (55 Tage!) — Zählerstände und Heizkostenabrechnung zusammenstellen<br>5. <strong>Besichtigungstermine W37 EG</strong> — 3 Anfragen offen (Muster, Firma XY, Sabine K.)<br><br><span style="color:#2563eb">🔵 DIESE WOCHE PLANEN:</span><br>6. Angebot Profi-Maler W37 Treppenhaus prüfen und freigeben<br>7. Dachdecker Fischer für Z33-Termin im September bestätigen`,
+
+  nk: `<strong>NK-Abrechnung 2024 — Zeppelinstraße 33</strong><br><br>Kostenaufteilung auf Basis Ihrer Angaben:<br><br>| Kostenart | Gesamt | Anteil/m² |<br>|---|---|---|<br>| Heizung | € 8.400 | € 16,15/m² |<br>| Wasser/Abwasser | € 1.200 | € 2,31/m² |<br>| Müll/Entsorgung | € 840 | € 1,62/m² |<br>| Hausmeister/Garten | € 2.400 | € 4,62/m² |<br>| Versicherung | € 1.800 | € 3,46/m² |<br>| <strong>Gesamt</strong> | <strong>€ 14.640</strong> | <strong>€ 28,15/m²</strong> |<br><br>Bei 520 m² Gesamtfläche und 6 Einheiten (Ø 87 m²):<br>→ Ø Nachzahlung pro Einheit: ca. <strong>€ 2.440/Jahr</strong><br>→ Empfohlene NK-Vorauszahlung neu: <strong>€ 240/Monat</strong> (statt bisher angenommener Wert)<br><br>Ich kann die Einzelabrechnungen für jeden Mieter erstellen. Soll ich das tun?`,
+
+  handwerker: `<strong>Handwerkerauftrag — Beck Sanitär</strong><br><br>Stuttgart, den 06. Mai 2026<br><br>Sehr geehrter Herr Beck,<br><br>wir beauftragen Sie mit folgender Reparaturmaßnahme:<br><br><strong>Objekt:</strong> Haußmannstraße 182, Bad OG<br><strong>Maßnahme:</strong> Dichtung Dusche erneuern, Silikonfugen komplett ersetzen, Abdichtung Badewannenrand prüfen und ggf. instandsetzen<br><strong>Priorität:</strong> Dringend — bitte Termin innerhalb 48 Stunden<br><strong>Mieter:</strong> bitte koordinieren Sie den Zugang direkt mit dem Mieter<br><br>Bitte bestätigen Sie diesen Auftrag und teilen Sie uns Ihren Terminvorschlag sowie einen Kostenvoranschlag mit.<br><br>Mit freundlichen Grüßen<br>EN Verwaltung GmbH & Co. KG · Benjamin Enzmann`,
+
+  default: `Ich helfe dir gerne dabei! Als KI-Assistent für das <strong>Enzmann Real Estate Portfolio</strong> kenne ich alle 13 Objekte (EN Verwaltung, NC Kemnat, AKE Hagnau, ENZO RE), deine 58 Mieter und alle laufenden Projekte.<br><br>Ich kann Dokumente erstellen (Mieterhöhungen, NK-Abrechnungen, Exposés, Kündigungen, Handwerkeraufträge), Rechenaufgaben lösen (Mietspiegelanpassung, NK-Umlage, Rendite), Mietrecht erklären und Planungen erstellen.<br><br>Stelle mir eine spezifischere Frage — zum Beispiel ein konkretes Objekt, einen Mieter oder eine Aufgabe — und ich antworte präzise.`
+};
+
+function getResponse(text) {
+  const t = text.toLowerCase();
+  if (t.includes('mieterhöh') || t.includes('blersch') || t.includes('erhöhungsbrief')) return responses.mieterhöhung;
+  if (t.includes('exposé') || t.includes('expose') || t.includes('inserat') || t.includes('bürofläche')) return responses.exposé;
+  if (t.includes('kündigung') || t.includes('kleinlager') || t.includes('wunderhübsch')) return responses.kündigung;
+  if (t.includes('aufgaben') || t.includes('woche') || t.includes('dringend') || t.includes('priorisiert')) return responses.aufgaben;
+  if (t.includes('nk') || t.includes('nebenkosten') || t.includes('abrechnung') || t.includes('berechne')) return responses.nk;
+  if (t.includes('handwerker') || t.includes('auftrag') || t.includes('beck') || t.includes('sanitär')) return responses.handwerker;
+  return responses.default;
+}
+
+function aiSend(preset) {
+  const inp = document.getElementById('aiInp');
+  const text = preset || inp.value.trim();
+  if (!text) return;
+  const msgs = document.getElementById('aiMsgs');
+
+  const u = document.createElement('div');
+  u.className = 'msg u';
+  u.innerHTML = `<div class="av" style="background:var(--navy)">B</div><div class="bubble">${text}</div>`;
+  msgs.appendChild(u);
+  if (!preset) inp.value = '';
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // typing indicator
+  const typing = document.createElement('div');
+  typing.className = 'msg a';
+  typing.innerHTML = `<div class="av">🤖</div><div class="bubble" style="color:var(--muted)">tippt…</div>`;
+  msgs.appendChild(typing);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  setTimeout(() => {
+    typing.remove();
+    const r = document.createElement('div');
+    r.className = 'msg a';
+    r.innerHTML = `<div class="av">🤖</div><div class="bubble">${getResponse(text)}</div>`;
+    msgs.appendChild(r);
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 900);
+}
+
+function aiNK() {
+  go('ai', document.querySelectorAll('.nav-btn')[9]);
+  setTimeout(() => aiSend('Berechne die NK-Umlage für Zeppelinstraße 33, 2024: Heizung 8.400€, Wasser 1.200€, Müll 840€, Hausmeister 2.400€, Versicherung 1.800€. Gesamtfläche 520m², 6 Einheiten.'), 400);
+}
+function auftragsMsg() {
+  go('ai', document.querySelectorAll('.nav-btn')[9]);
+  setTimeout(() => aiSend('Erstelle einen Handwerkerauftrag für Beck Sanitär: Wasserschaden Bad OG H182, Dichtung Dusche und Silikonfugen erneuern, dringend, mit Bitte um Terminbestätigung.'), 400);
+}
+
+// init on load
+window.addEventListener('load', () => { setTimeout(initRev, 200); });
+</script>
+</body>
+</html>

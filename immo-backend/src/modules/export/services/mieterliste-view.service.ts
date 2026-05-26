@@ -22,6 +22,7 @@ export interface MieterlisteEinheit {
   laufzeitBis:       string          // formatted
   mieter:            string
   mieterId:          string | null
+  mietart:           string          // 'wohnraum' | 'gewerbe'
   kaltmiete:         number
   nkVorauszahlung:   number
   warmmiete:         number
@@ -140,6 +141,7 @@ export async function getMieterlisteView(
       mieteProM2,
       letzteErhoehung,
       erhoehungsTyp,
+      mietart:         mv?.mietart ?? 'wohnraum',
       notizen:         mv?.notizen ?? '',
       istLeer:         !mv || mieterName === '—',
     }
