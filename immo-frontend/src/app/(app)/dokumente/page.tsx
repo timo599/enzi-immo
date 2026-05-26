@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { dokumenteApi, type DokumentKategorie, type DokumentListParams } from '@/lib/api'
+import { api, dokumenteApi, type DokumentKategorie, type DokumentListParams } from '@/lib/api'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -63,6 +63,8 @@ export default function DokumentePage() {
   const [search, setSearch] = useState('')
   const [kategorie, setKategorie] = useState<DokumentKategorie | 'alle'>('alle')
   const [reviewDocId, setReviewDocId] = useState<string | null>(null)
+  const [scanDocId, setScanDocId]     = useState<string | null>(null)
+  const [scanResult, setScanResult]   = useState<Record<string, unknown> | null>(null)
   const [uploadOpen, setUploadOpen] = useState(false)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploadKategorie, setUploadKategorie] = useState<DokumentKategorie>('rechnung')
@@ -134,6 +136,18 @@ export default function DokumentePage() {
   }), [items])
 
   // ── Upload-Mutation ────────────────────────────────────────────────────
+  const scanMut = useMutation({
+    mutationFn: (dokumentId: string) =>
+      api.post<{ data: Record<string, unknown> }>('/scan/beleg', { dokumentId }).then(r => r.data.data),
+    onSuccess: (data, dokumentId) => {
+      setScanDocId(dokumentId)
+      setScanResult(data)
+      toast.success('Beleg analysiert')
+      qc.invalidateQueries({ queryKey: ['dokumente', 'global'] })
+    },
+    onError: (e: any) => toast.error(e.response?.data?.error ?? 'Scan fehlgeschlagen'),
+  })
+
   const uploadMut = useMutation({
     mutationFn: async () => {
       if (!uploadFile) throw new Error('Bitte Datei wählen')
@@ -320,21 +334,34 @@ export default function DokumentePage() {
                         {canReview ? 'Prüfen' : 'Ansehen'}
                       </Button>
                     ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          try {
-                            const r = await dokumenteApi.get(d.id)
-                            const url = r.data?.data?.downloadUrl
-                            if (url) window.open(url, '_blank', 'noopener')
-                          } catch {
-                            toast.error('Download fehlgeschlagen')
-                          }
-                        }}
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          title="Beleg per KI scannen"
+                          disabled={scanMut.isPending && scanMut.variables === d.id}
+                          onClick={() => scanMut.mutate(d.id)}
+                        >
+                          {scanMut.isPending && scanMut.variables === d.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <Sparkles className="h-3.5 w-3.5" />}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={async () => {
+                            try {
+                              const r = await dokumenteApi.get(d.id)
+                              const url = r.data?.data?.downloadUrl
+                              if (url) window.open(url, '_blank', 'noopener')
+                            } catch {
+                              toast.error('Download fehlgeschlagen')
+                            }
+                          }}
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </CardContent>
@@ -349,6 +376,43 @@ export default function DokumentePage() {
         open={!!reviewDocId}
         onClose={() => setReviewDocId(null)}
       />
+
+      {/* Scan-Result Dialog */}
+      <Dialog open={!!scanResult} onOpenChange={o => { if (!o) { setScanResult(null); setScanDocId(null) } }}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Beleg-Analyse
+            </DialogTitle>
+          </DialogHeader>
+          {scanResult && (
+            <div className="space-y-2 text-sm">
+              {(Object.entries(scanResult) as [string, unknown][]).map(([k, v]) => {
+                if (v === null || v === undefined || v === '') return null
+                const labels: Record<string, string> = {
+                  rechnungsdatum: 'Rechnungsdatum', faelligkeitsdatum: 'Fällig am',
+                  rechnungsnummer: 'Rechnungs-Nr.', lieferant: 'Lieferant',
+                  lieferantAdresse: 'Adresse', lieferantUstId: 'USt-IdNr.',
+                  beschreibung: 'Leistung', nettobetrag: 'Netto (€)',
+                  mwstSatz: 'MwSt. (%)', mwstBetrag: 'MwSt. (€)',
+                  gesamtbetrag: 'Gesamt (€)', waehrung: 'Währung',
+                  bezugsobjekt: 'Bezugsobjekt', kategorie: 'Kategorie',
+                  iban: 'IBAN', bic: 'BIC', verwendungszweck: 'Verwendungszweck',
+                }
+                return (
+                  <div key={k} className="flex gap-2 border-b pb-1.5 last:border-0">
+                    <span className="text-muted-foreground w-36 shrink-0">{labels[k] ?? k}</span>
+                    <span className="font-medium break-all">
+                      {typeof v === 'number' ? v.toLocaleString('de-AT', { minimumFractionDigits: 2 }) : String(v)}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
