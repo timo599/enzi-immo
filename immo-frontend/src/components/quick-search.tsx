@@ -37,7 +37,7 @@ export function QuickSearch() {
   // Daten lazy laden, nur wenn Dialog offen
   const { data: mieter, isLoading: lM } = useQuery({
     queryKey: ['quicksearch-mieter'],
-    queryFn:  async () => (await mieterApi.list()).data?.data ?? [],
+    queryFn:  async () => (await mieterApi.list({ pageSize: 200 })).data?.data ?? [],
     enabled:  open,
     staleTime: 60_000,
   })

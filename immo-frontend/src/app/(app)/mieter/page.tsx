@@ -78,7 +78,7 @@ export default function MieterPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['mieter'],
-    queryFn: () => mieterApi.list(),
+    queryFn: () => mieterApi.list({ pageSize: 200 }),
   })
 
   // Mietverträge des ausgewählten Mieters

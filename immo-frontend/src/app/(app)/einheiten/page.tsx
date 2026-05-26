@@ -136,7 +136,7 @@ export default function EinheitenPage() {
     queryFn:  () => einheitenApi.list(filterObjektId ? { objektId: filterObjektId } : {}),
   })
   const { data: objData }  = useQuery({ queryKey: ['objekte'],  queryFn: () => objekteApi.list() })
-  const { data: miData }   = useQuery({ queryKey: ['mieter'],   queryFn: () => mieterApi.list() })
+  const { data: miData }   = useQuery({ queryKey: ['mieter'],   queryFn: () => mieterApi.list({ pageSize: 200 }) })
   const { data: vertragData } = useQuery({
     queryKey: ['mietvertraege', selectedEinheit?.id],
     queryFn:  () => mietvertraegeApi.list({ einheitId: selectedEinheit!.id, pageSize: 50 }),

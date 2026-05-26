@@ -41,7 +41,7 @@ export default function PortalPage() {
   })
   const { data: mieterRes } = useQuery({
     queryKey: ['mieter-list-portal'],
-    queryFn:  () => api.get<{ data: Mieter[] }>('/mieter').then(r => r.data.data),
+    queryFn:  () => api.get<{ data: Mieter[] }>('/mieter', { params: { pageSize: 200 } }).then(r => r.data.data),
   })
 
   const create = useMutation({

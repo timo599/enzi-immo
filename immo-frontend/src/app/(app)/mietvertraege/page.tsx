@@ -60,7 +60,7 @@ export default function MietvertraegePage() {
 
   const { data, isLoading } = useQuery({ queryKey: ['mietvertraege'], queryFn: () => mietvertraegeApi.list() })
   const { data: einData } = useQuery({ queryKey: ['einheiten'], queryFn: () => einheitenApi.list() })
-  const { data: miData } = useQuery({ queryKey: ['mieter'], queryFn: () => mieterApi.list() })
+  const { data: miData } = useQuery({ queryKey: ['mieter'], queryFn: () => mieterApi.list({ pageSize: 200 }) })
 
   const saveMut = useMutation({
     mutationFn: (f: typeof defaultForm) => {
