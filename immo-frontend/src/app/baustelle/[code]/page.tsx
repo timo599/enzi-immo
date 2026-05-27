@@ -157,10 +157,11 @@ export default function BaustellePublicPage({ params }: { params: Promise<{ code
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [doneCollapsed, setDoneCollapsed] = useState(false)
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['baustelle-public', code],
     queryFn: () => api.get(`/baustellen/zugang/${code}`).then(r => r.data.data),
-    retry: false,
+    retry: 2,             // bis zu 2 Wiederholungen (Render cold-start)
+    retryDelay: 3000,     // 3s warten zwischen Versuchen
     refetchInterval: 30_000, // alle 30s automatisch aktualisieren
   })
 
@@ -175,26 +176,51 @@ export default function BaustellePublicPage({ params }: { params: Promise<{ code
   const baustelle: Baustelle | null = data ?? null
   const today = new Date().toISOString().slice(0, 10)
 
-  if (isLoading) return (
+  if (isLoading || isFetching && !data) return (
     <div className="min-h-screen bg-orange-50 flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="animate-spin rounded-full h-10 w-10 border-4 border-orange-200 border-t-orange-600" />
         <p className="text-orange-600 text-sm font-medium">Lade Baustelle…</p>
+        <p className="text-xs text-orange-400">Server startet ggf. erst hoch…</p>
       </div>
     </div>
   )
 
-  if (isError || !baustelle) return (
-    <div className="min-h-screen bg-orange-50 flex flex-col items-center justify-center gap-4 p-6">
-      <div className="w-16 h-16 rounded-2xl bg-orange-100 flex items-center justify-center">
-        <HardHat className="h-8 w-8 text-orange-400" />
+  if (isError || !baustelle) {
+    const httpStatus = (error as any)?.response?.status
+    const isNotFound = httpStatus === 404
+    return (
+      <div className="min-h-screen bg-orange-50 flex flex-col items-center justify-center gap-4 p-6">
+        <div className="w-16 h-16 rounded-2xl bg-orange-100 flex items-center justify-center">
+          <HardHat className="h-8 w-8 text-orange-400" />
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-bold text-orange-900">
+            {isNotFound ? 'Ungültiger Zugangscode' : 'Verbindungsfehler'}
+          </p>
+          <p className="text-sm text-orange-600 mt-1">
+            {isNotFound
+              ? 'Dieser Zugangscode ist nicht gültig oder die Baustelle ist abgeschlossen.'
+              : 'Der Server ist nicht erreichbar. Bitte kurz warten und erneut versuchen.'}
+          </p>
+          {!isNotFound && (
+            <p className="text-xs text-orange-400 mt-1">Code: {code.toUpperCase()}</p>
+          )}
+        </div>
+        <button
+          onClick={() => refetch()}
+          className="mt-2 bg-orange-600 text-white text-sm font-semibold px-6 py-3 rounded-xl hover:bg-orange-700 active:scale-95 transition-all"
+        >
+          Erneut versuchen
+        </button>
+        {isNotFound && (
+          <p className="text-xs text-orange-400 text-center max-w-xs">
+            Tipp: Der Code muss genau so eingegeben werden wie vom Bauleiter mitgeteilt (z.B. A1B2C3).
+          </p>
+        )}
       </div>
-      <div className="text-center">
-        <p className="text-lg font-bold text-orange-900">Ungültiger Zugangscode</p>
-        <p className="text-sm text-orange-600 mt-1">Bitte den Code erneut beim Bauleiter erfragen.</p>
-      </div>
-    </div>
-  )
+    )
+  }
 
   const offene   = baustelle.todos.filter(t => t.status !== 'erledigt' && t.status !== 'abgebrochen')
   const erledigt = baustelle.todos.filter(t => t.status === 'erledigt')
