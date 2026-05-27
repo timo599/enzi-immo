@@ -107,7 +107,7 @@ export default function BaustellenPage() {
   const { data: bauRes }    = useQuery({ queryKey: ['baustellen'],        queryFn: () => api.get('/baustellen').then(r => r.data.data) })
   const { data: teamRes }   = useQuery({ queryKey: ['team'],              queryFn: () => api.get('/todos/team').then(r => r.data.data) })
   const { data: firmenRes } = useQuery({ queryKey: ['firmen'],            queryFn: () => api.get('/firmen').then(r => r.data.data) })
-  const { data: objektRes } = useQuery({ queryKey: ['objekte'],           queryFn: () => api.get('/objekte', { params: { pageSize: 200 } }).then(r => r.data.data) })
+  const { data: objektRes } = useQuery({ queryKey: ['objekte'],           queryFn: () => api.get('/objekte', { params: { pageSize: 500 } }).then(r => r.data.data) })
   const { data: detailRes } = useQuery({
     queryKey: ['baustelle', selected?.id],
     queryFn: () => api.get(`/baustellen/${selected!.id}`).then(r => r.data.data),

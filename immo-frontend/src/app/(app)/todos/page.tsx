@@ -96,7 +96,7 @@ export default function TodosPage() {
   })
   const { data: teamRes }   = useQuery({ queryKey: ['team'],   queryFn: () => api.get('/todos/team').then(r => r.data.data) })
   const { data: firmenRes } = useQuery({ queryKey: ['firmen'], queryFn: () => api.get('/firmen').then(r => r.data.data) })
-  const { data: objekteRes }= useQuery({ queryKey: ['objekte'],queryFn: () => api.get('/objekte', { params: { pageSize: 200 } }).then(r => r.data.data) })
+  const { data: objekteRes }= useQuery({ queryKey: ['objekte'],queryFn: () => api.get('/objekte', { params: { pageSize: 500 } }).then(r => r.data.data) })
 
   const todos:   Todo[]         = todosRes  ?? []
   const team:    TeamMitglied[] = teamRes   ?? []

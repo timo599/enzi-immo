@@ -37,7 +37,7 @@ export function QuickSearch() {
   // Daten lazy laden, nur wenn Dialog offen
   const { data: mieter, isLoading: lM } = useQuery({
     queryKey: ['quicksearch-mieter'],
-    queryFn:  async () => (await mieterApi.list({ pageSize: 200 })).data?.data ?? [],
+    queryFn:  async () => (await mieterApi.list({ pageSize: 500 })).data?.data ?? [],
     enabled:  open,
     staleTime: 60_000,
   })
@@ -49,13 +49,13 @@ export function QuickSearch() {
   })
   const { data: einheiten, isLoading: lE } = useQuery({
     queryKey: ['quicksearch-einheiten'],
-    queryFn:  async () => (await einheitenApi.list({ pageSize: 200 })).data?.data ?? [],
+    queryFn:  async () => (await einheitenApi.list({ pageSize: 500 })).data?.data ?? [],
     enabled:  open,
     staleTime: 60_000,
   })
   const { data: vertraege, isLoading: lV } = useQuery({
     queryKey: ['quicksearch-vertraege'],
-    queryFn:  async () => (await mietvertraegeApi.list({ pageSize: 200 })).data?.data ?? [],
+    queryFn:  async () => (await mietvertraegeApi.list({ pageSize: 500 })).data?.data ?? [],
     enabled:  open,
     staleTime: 60_000,
   })
