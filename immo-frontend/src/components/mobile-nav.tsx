@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Building2, FileText, Users, MoreHorizontal,
   Home, Receipt, CreditCard, TrendingUp, FolderOpen, Brain,
   Settings, Briefcase, X, List, CalendarClock, Wrench,
-  ClipboardCheck, Vault, ShieldCheck, KeyRound, CheckSquare, HardHat,
+  ClipboardCheck, Vault, ShieldCheck, KeyRound, CheckSquare, HardHat, BookOpen, GraduationCap,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -35,6 +35,8 @@ const MORE_NAV = [
   { href: '/portal',          label: 'Mieter-Portal',     icon: KeyRound },
   { href: '/todos',           label: 'Aufgaben',           icon: CheckSquare },
   { href: '/baustellen',      label: 'Baustellen',         icon: HardHat },
+  { href: '/leitfaden',       label: 'Leitfaden',          icon: BookOpen },
+  { href: '/einarbeitung',    label: 'Einarbeitung',       icon: GraduationCap },
   { href: '/lernmodus',       label: 'Lernmodus',         icon: Brain },
   { href: '/einstellungen',   label: 'Einstellungen',     icon: Settings },
 ]

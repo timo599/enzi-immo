@@ -28,6 +28,8 @@ import {
   KeyRound,
   CheckSquare,
   HardHat,
+  BookOpen,
+  GraduationCap,
 } from 'lucide-react'
 import { QuickSearch } from './quick-search'
 
@@ -52,6 +54,8 @@ const NAV = [
   { href: '/portal',          label: 'Mieter-Portal',     icon: KeyRound },
   { href: '/todos',           label: 'Aufgaben',           icon: CheckSquare },
   { href: '/baustellen',      label: 'Baustellen',         icon: HardHat },
+  { href: '/leitfaden',       label: 'Firmenleitfaden',    icon: BookOpen },
+  { href: '/einarbeitung',    label: 'Einarbeitung',       icon: GraduationCap },
   { href: '/lernmodus',       label: 'Lernmodus',         icon: Brain },
   { href: '/einstellungen',   label: 'Einstellungen',     icon: Settings },
 ]

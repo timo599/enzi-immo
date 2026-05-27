@@ -205,6 +205,8 @@ model Tenant {
   teamMitglieder        TeamMitglied[]
   todos                 Todo[]
   baustellen            Baustelle[]
+  leitfaeden            Leitfaden[]
+  einarbeitungen        Einarbeitung[]
 
   @@map("tenants")
 }
@@ -229,6 +231,8 @@ model User {
   erstellteAbrechnungen    NkAbrechnung[]     @relation("AbrechnungErsteller")
   bestaetigteMatchings     MatchingErgebnis[] @relation("MatchingBestaetiger")
   zugeordneteBuchungen     Buchungszeile[]    @relation("BuchungZuordner")
+  leitfaeden               Leitfaden[]
+  modulFortschritte        ModulFortschritt[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -292,6 +296,7 @@ model Objekt {
   wartungsaufgaben      Wartungsaufgabe[]
   todos                 Todo[]
   baustellen            Baustelle[]
+  leitfaeden            Leitfaden[]
 
   @@index([tenantId])
   @@map("objekte")
@@ -1333,4 +1338,95 @@ model BaustelleZuweisung {
 
   @@unique([baustelleId, teamMitgliedId])
   @@map("baustelle_zuweisungen")
+}
+
+// ── EINARBEITUNG & NACHFOLGE ─────────────────────────────────
+
+model Einarbeitung {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  titel        String    @db.VarChar(300)
+  beschreibung String?
+  typ          String    @default("intern") @db.VarChar(20)  // intern | extern
+  zielRolle    String?   @map("ziel_rolle") @db.VarChar(50)
+  zugangscode  String?   @unique @db.VarChar(50)
+  gueltigBis   DateTime? @map("gueltig_bis")
+  aktiv        Boolean   @default(true)
+  erstelltAm   DateTime  @default(now()) @map("erstellt_am")
+  geaendertAm  DateTime? @updatedAt @map("geaendert_am")
+
+  tenant  Tenant               @relation(fields: [tenantId], references: [id])
+  module  EinarbeitungsModul[]
+
+  @@index([tenantId])
+  @@index([zugangscode])
+  @@map("einarbeitungen")
+}
+
+model EinarbeitungsModul {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  einarbeitungId  String   @map("einarbeitung_id") @db.Uuid
+  titel           String   @db.VarChar(300)
+  beschreibung    String?
+  inhalt          String?
+  schritte        Json     @default("[]")
+  leitfadenIds    Json     @default("[]") @map("leitfaden_ids")
+  reihenfolge     Int      @default(0)
+  pflicht         Boolean  @default(true)
+  erstelltAm      DateTime @default(now()) @map("erstellt_am")
+
+  einarbeitung  Einarbeitung       @relation(fields: [einarbeitungId], references: [id], onDelete: Cascade)
+  fortschritte  ModulFortschritt[]
+
+  @@index([einarbeitungId])
+  @@map("einarbeitungs_module")
+}
+
+model ModulFortschritt {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  modulId      String    @map("modul_id") @db.Uuid
+  userId       String?   @map("user_id") @db.Uuid
+  externEmail  String?   @map("extern_email") @db.VarChar(255)
+  externName   String?   @map("extern_name") @db.VarChar(200)
+  status       String    @default("offen") @db.VarChar(30)
+  notizen      String?
+  erledigtAm   DateTime? @map("erledigt_am")
+  erstelltAm   DateTime  @default(now()) @map("erstellt_am")
+  geaendertAm  DateTime? @updatedAt @map("geaendert_am")
+
+  modul  EinarbeitungsModul @relation(fields: [modulId], references: [id], onDelete: Cascade)
+  user   User?              @relation(fields: [userId], references: [id])
+
+  @@unique([modulId, userId])
+  @@unique([modulId, externEmail])
+  @@index([modulId])
+  @@map("modul_fortschritte")
+}
+
+// ── FIRMENLEITFADEN ──────────────────────────────────────────
+
+model Leitfaden {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  titel        String    @db.VarChar(300)
+  kategorie    String?   @db.VarChar(100)
+  beschreibung String?
+  inhalt       String?
+  userId       String?   @map("user_id") @db.Uuid
+  fuerRolle    String?   @map("fuer_rolle") @db.VarChar(50)
+  objektId     String?   @map("objekt_id") @db.Uuid
+  schritte     Json      @default("[]")
+  budgetGrenze Decimal?  @map("budget_grenze") @db.Decimal(12, 2)
+  sortierung   Int       @default(0)
+  aktiv        Boolean   @default(true)
+  erstelltAm   DateTime  @default(now()) @map("erstellt_am")
+  geaendertAm  DateTime? @updatedAt @map("geaendert_am")
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
+  objekt Objekt? @relation(fields: [objektId], references: [id])
+
+  @@index([tenantId])
+  @@index([userId])
+  @@map("leitfaeden")
 }
