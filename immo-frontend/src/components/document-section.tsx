@@ -35,6 +35,9 @@ export const KATEGORIE_LABELS: Record<DokumentKategorie, string> = {
   zaehler_foto:             'Zähler-Foto',
   zaehlerstand:             'Zählerstand',
   betriebskostenabrechnung: 'Betriebskostenabr.',
+  wohngeberbescheinigung:   'Wohngeberbescheinigung',
+  abfallkalender:           'Abfallkalender',
+  hausordnung:              'Hausordnung',
   versicherung:             'Versicherung',
   grundsteuer:              'Grundsteuer',
   korrespondenz:            'Korrespondenz',
@@ -62,10 +65,10 @@ function categoriesFor(scope: DocumentScope): DokumentKategorie[] {
     return ['mietvertrag', 'mietvertrag_anlage', 'uebergabeprotokoll', 'kuendigung', 'korrespondenz', 'sonstiges']
   }
   if (scope === 'einheit') {
-    return ['mietvertrag', 'uebergabeprotokoll', 'zaehler_foto', 'zaehlerstand', 'rechnung', 'korrespondenz', 'sonstiges']
+    return ['wohngeberbescheinigung', 'hausordnung', 'mietvertrag', 'uebergabeprotokoll', 'zaehler_foto', 'zaehlerstand', 'rechnung', 'korrespondenz', 'sonstiges']
   }
   if (scope === 'objekt') {
-    return ['versicherung', 'grundsteuer', 'rechnung', 'betriebskostenabrechnung', 'korrespondenz', 'sonstiges']
+    return ['abfallkalender', 'hausordnung', 'versicherung', 'grundsteuer', 'rechnung', 'betriebskostenabrechnung', 'korrespondenz', 'sonstiges']
   }
   return Object.keys(KATEGORIE_LABELS) as DokumentKategorie[]
 }

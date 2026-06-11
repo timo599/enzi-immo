@@ -322,9 +322,20 @@ export class DokumenteService {
     const dok = await this.repo.findById(id, ctx.tenantId)
     if (!dok) throw new NotFoundError('Dokument', id)
 
-    // Hard delete with S3 cleanup happens via repository if implemented;
-    // for now we just remove DB record (S3 file remains for safety)
-    await this.prisma.dokument.delete({ where: { id } })
+    // Abhängige Records zuerst löschen (FK-Constraints ohne CASCADE)
+    await this.prisma.$transaction([
+      // DokExtraktion (1:1, dokument_id NOT NULL)
+      this.prisma.dokExtraktion.deleteMany({ where: { dokumentId: id } }),
+      // LernmodusSession (1:1, dokument_id NOT NULL)
+      this.prisma.lernmodusSession.deleteMany({ where: { dokumentId: id } }),
+      // Kostenposition: nur Referenz entfernen (nullable FK)
+      this.prisma.kostenposition.updateMany({
+        where: { dokumentId: id },
+        data:  { dokumentId: null },
+      }),
+      // Dokument selbst löschen
+      this.prisma.dokument.delete({ where: { id } }),
+    ])
 
     await writeAudit({
       prisma: this.prisma,

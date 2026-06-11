@@ -70,6 +70,8 @@ import { todoRoutes }             from './modules/todo/todo.routes.js'
 import { baustelleRoutes }        from './modules/baustelle/baustelle.routes.js'
 import { leitfadenRoutes }        from './modules/leitfaden/leitfaden.routes.js'
 import { einarbeitungRoutes }     from './modules/einarbeitung/einarbeitung.routes.js'
+import { betriebRoutes }          from './modules/betrieb/betrieb.routes.js'
+import { MieterhoehungReminderService } from './modules/mieterhoehung/services/mieterhoehung-reminder.service.js'
 
 const MAX_UPLOAD_BYTES = 26 * 1024 * 1024
 
@@ -127,6 +129,12 @@ async function buildApp() {
   })
 
   const API = '/api/v1'
+
+  app.get(`${API}/health`, async () => {
+    await app.prisma.$queryRaw`SELECT 1`
+    return { status: 'ok', timestamp: new Date().toISOString() }
+  })
+
   await app.register(authRoutes,                     { prefix: `${API}/auth` })
   await app.register(usersRoutes,                    { prefix: `${API}/auth` })
   await app.register(firmenRoutes,                   { prefix: `${API}/firmen` })
@@ -166,8 +174,51 @@ async function buildApp() {
   await app.register(baustelleRoutes,                 { prefix: `${API}/baustellen` })
   await app.register(leitfadenRoutes,                 { prefix: `${API}/leitfaden` })
   await app.register(einarbeitungRoutes,              { prefix: `${API}/einarbeitung` })
+  await app.register(betriebRoutes,                   { prefix: `${API}/betrieb` })
 
   return app
+}
+
+// ── Täglicher Mieterhöhungs-Reminder-Job ─────────────────────────────────────
+// Läuft täglich um 08:00 Uhr und erstellt Todos für fällige Erhöhungen.
+async function startReminderScheduler(prisma: import('@prisma/client').PrismaClient) {
+  const reminderSvc = new MieterhoehungReminderService(prisma)
+
+  async function runForAllTenants() {
+    try {
+      const tenants = await prisma.tenant.findMany({ where: { aktiv: true }, select: { id: true } })
+      for (const t of tenants) {
+        const res = await reminderSvc.run(t.id, 'system')
+        if (res.erstellt > 0) {
+          app.log.info({ tenantId: t.id, erstellt: res.erstellt }, 'Mieterhöhungs-Reminder erstellt')
+        }
+      }
+    } catch (err) {
+      app.log.error(err, 'Fehler im Mieterhöhungs-Reminder-Job')
+    }
+  }
+
+  // Sofort beim Start einmal laufen lassen (mit 10s Verzögerung nach Server-Start)
+  setTimeout(runForAllTenants, 10_000)
+
+  // Dann täglich um 08:00 Uhr (via Interval – nächste 08:00 berechnen)
+  function scheduleNext() {
+    const now   = new Date()
+    const next  = new Date(now)
+    next.setHours(8, 0, 0, 0)
+    if (next <= now) next.setDate(next.getDate() + 1)
+    const msUntilNext = next.getTime() - now.getTime()
+
+    setTimeout(async () => {
+      await runForAllTenants()
+      // Danach täglich alle 24h
+      setInterval(runForAllTenants, 24 * 60 * 60 * 1000)
+    }, msUntilNext)
+
+    app.log.info({ nächsterLauf: next.toISOString() }, 'Mieterhöhungs-Reminder geplant')
+  }
+
+  scheduleNext()
 }
 
 async function start() {
@@ -175,6 +226,9 @@ async function start() {
     const server = await buildApp()
     await server.listen({ port: Number(process.env['PORT'] ?? 3000), host: process.env['HOST'] ?? '0.0.0.0' })
     server.log.info('ImmoManager Pro API running')
+
+    // Reminder-Job starten (nach vollständiger Initialisierung)
+    await startReminderScheduler((server as any).prisma)
   } catch (err) {
     app.log.error(err)
     process.exit(1)

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { einheitenApi, objekteApi, mieterApi, mietvertraegeApi, zaehlerApi, dokumenteApi } from '@/lib/api'
+import { einheitenApi, objekteApi, mieterApi, mietvertraegeApi, zaehlerApi, dokumenteApi, portalAdminApi } from '@/lib/api'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,7 +19,7 @@ import { euro, datum } from '@/lib/format'
 import {
   Plus, Home, Pencil, Building, Warehouse, Car, Stethoscope, ShoppingBag,
   BriefcaseBusiness, Layers, Users, FileText, Upload, Sparkles, CalendarDays,
-  Zap, Droplets, Flame, Thermometer, Trash2, ChevronDown, ChevronUp, FolderOpen,
+  Zap, Droplets, Flame, Thermometer, Trash2, ChevronDown, ChevronUp, FolderOpen, Mail, Copy,
 } from 'lucide-react'
 import { DocumentSection } from '@/components/document-section'
 import type { DokumentKategorie } from '@/lib/api'
@@ -43,6 +43,14 @@ interface Zaehler {
 interface Dokument {
   id: string; originalName: string; dokumentKategorie: string
   hochgeladenAm: string; mimeType: string
+}
+interface WelcomeDraft {
+  mieterName: string
+  login: string
+  passwort: string
+  portalUrl: string
+  ansprechpartner: { name: string; rolle: string; email: string; telefon: string }
+  mail: { an: string; betreff: string; text: string }
 }
 
 // ── Konstanten ─────────────────────────────────────────────────
@@ -73,6 +81,10 @@ const VERBRAUCHSTYPEN: Record<string, { label: string; icon: React.ElementType; 
 const DOK_KATEGORIEN: Record<string, string> = {
   rechnung:    'Rechnung',
   mietvertrag: 'Mietvertrag',
+  wohngeberbescheinigung: 'Wohngeberbescheinigung',
+  abfallkalender: 'Abfallkalender',
+  hausordnung: 'Hausordnung',
+  betriebskostenabrechnung: 'Betriebskostenabrechnung',
   minol:       'Minol',
   zaehler_foto:'Zählerfoto',
   sonstiges:   'Sonstiges',
@@ -92,8 +104,6 @@ function mieterName(m?: { vorname?: string; nachname: string }) {
 // ── Hauptkomponente ────────────────────────────────────────────
 export default function EinheitenPage() {
   const qc = useQueryClient()
-  const ocrFileRef    = useRef<HTMLInputElement>(null)
-  const dokFileRef    = useRef<HTMLInputElement>(null)
   const autoFileRef   = useRef<HTMLInputElement>(null)
   const [autoUploading, setAutoUploading] = useState(false)
 
@@ -127,6 +137,10 @@ export default function EinheitenPage() {
   // Dokument Upload
   const [dokUploading, setDokUploading]       = useState(false)
   const [dokKategorie, setDokKategorie]       = useState<DokumentKategorie>('rechnung')
+  const [welcomeDraft, setWelcomeDraft]       = useState<WelcomeDraft | null>(null)
+  const [welcomePromptOpen, setWelcomePromptOpen] = useState(false)
+  const [welcomeDetailOpen, setWelcomeDetailOpen] = useState(false)
+  const [loadingMailId, setLoadingMailId]     = useState<string | null>(null)
 
   const [filterObjektId, setFilterObjektId]   = useState('')
 
@@ -152,6 +166,35 @@ export default function EinheitenPage() {
     queryFn:  () => dokumenteApi.list({ einheitId: selectedEinheit!.id, pageSize: 50 }),
     enabled:  !!selectedEinheit && sheetTab === 'dokumente',
   })
+
+  function handleWelcomeDraft(draft?: WelcomeDraft | null) {
+    if (!draft) return
+    setWelcomeDraft(draft)
+    setWelcomePromptOpen(true)
+  }
+
+  // Willkommensmail für beliebigen Mietvertrag laden und anzeigen
+  async function handleOpenWelcome(mietvertragId: string) {
+    setLoadingMailId(mietvertragId)
+    try {
+      const res = await portalAdminApi.onboardingForMietvertrag(mietvertragId)
+      const draft = res.data?.data
+      if (!draft) { toast.error('Keine Onboarding-Daten gefunden'); return }
+      setWelcomeDraft(draft)
+      setWelcomeDetailOpen(true)   // direkt zum Mail-Entwurf — kein Zwischenschritt
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error?.message ?? 'Willkommensmail konnte nicht geladen werden')
+    } finally {
+      setLoadingMailId(null)
+    }
+  }
+
+  async function copyWelcomeMail() {
+    if (!welcomeDraft) return
+    const text = `An: ${welcomeDraft.mail.an || '(E-Mail ergaenzen)'}\nBetreff: ${welcomeDraft.mail.betreff}\n\n${welcomeDraft.mail.text}`
+    await navigator.clipboard.writeText(text)
+    toast.success('Willkommensmail wurde kopiert')
+  }
 
   // ── Mutations ─────────────────────────────────────────────────
   const einheitMut = useMutation({
@@ -191,40 +234,45 @@ export default function EinheitenPage() {
         mieter: mieterId ? [{ mieterId, rolle: 'hauptmieter', seit: vertragForm.vertragsbeginn }] : [],
       })
     },
-    onSuccess: () => {
+    onSuccess: async (res: any) => {
       qc.invalidateQueries({ queryKey: ['mietvertraege'] })
       qc.invalidateQueries({ queryKey: ['mieter'] })
       toast.success('Mieter & Vertrag angelegt')
       setVertragOpen(false); setOcrDone(false)
+      const mietvertragId = res?.data?.data?.id
+      if (mietvertragId) {
+        try {
+          const onboarding = await portalAdminApi.onboardingForMietvertrag(mietvertragId)
+          const draft = onboarding.data?.data
+          if (draft) {
+            setWelcomeDraft(draft)
+            setWelcomeDetailOpen(true)   // direkt zum Mail-Entwurf, kein Zwischenschritt
+          }
+        } catch {
+          toast.info('Willkommensmail: Über das ✉-Symbol beim Mietvertrag jederzeit abrufbar')
+        }
+      }
     },
     onError: (err: any) => toast.error(err?.response?.data?.error?.message ?? 'Fehler'),
   })
 
   // Mietvertrag-Upload: PDF → OCR → Mieter+Vertrag automatisch anlegen
+  // ── Auto-Upload: OCR → Vorschau-Dialog öffnen ────────────────
+  // Lädt das PDF per OCR aus, füllt das Formular vor und öffnet
+  // den "Mieter & Vertrag"-Dialog zur Prüfung. Kein blindes Speichern.
+  // ── Auto-Upload vom Mieter-Tab: Formular reset → Dialog öffnen → OCR starten
   async function handleAutoUpload(file: File) {
     if (!selectedEinheit) return
+    // Formular zurücksetzen und Dialog sofort öffnen
+    setMieterForm(defaultMieterForm)
+    setVertragForm(defaultVertragForm)
+    setMieterMode('new')
+    setOcrDone(false)
+    setVertragOpen(true)          // Dialog gleich aufmachen
     setAutoUploading(true)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const res = await einheitenApi.uploadMietvertrag(selectedEinheit.id, fd)
-      const meta = res.data?.meta
-      qc.invalidateQueries({ queryKey: ['vertraege', selectedEinheit.id] })
-      qc.invalidateQueries({ queryKey: ['mieter'] })
-      qc.invalidateQueries({ queryKey: ['mietvertraege'] })
-      toast.success(meta?.mieterCreated
-        ? 'Mieter neu angelegt und Vertrag erstellt'
-        : 'Vertrag erstellt (Mieter war bereits vorhanden)')
-      if (meta?.warnings?.length) {
-        meta.warnings.forEach((w: string) => toast.warning(w))
-      }
-    } catch (err: any) {
-      const msg = err?.response?.data?.error?.message ?? 'Upload/OCR fehlgeschlagen'
-      toast.error(msg)
-    } finally {
-      setAutoUploading(false)
-      if (autoFileRef.current) autoFileRef.current.value = ''
-    }
+    await handleOcr(file)         // OCR läuft im Dialog sichtbar
+    setAutoUploading(false)
+    if (autoFileRef.current) autoFileRef.current.value = ''
   }
 
   const zaehlerMut = useMutation({
@@ -256,55 +304,45 @@ export default function EinheitenPage() {
     onError: (err: any) => toast.error(err?.response?.data?.error?.message ?? 'Fehler'),
   })
 
-  // ── OCR Handler ───────────────────────────────────────────────
-  async function handleOcr() {
-    const file = ocrFileRef.current?.files?.[0]
-    if (!file) { toast.error('Bitte Datei auswählen'); return }
+  // ── OCR Handler — akzeptiert File direkt, kein Ref nötig ─────
+  async function handleOcr(file: File) {
     setOcrLoading(true)
+    setOcrDone(false)
     try {
       const fd = new FormData(); fd.append('file', file)
       const res = await mietvertraegeApi.ocr(fd)
-      const d = res.data?.data
-      if (d?.mieter) {
+      const d = res.data?.data ?? {}
+      if (d.mieter) {
         setMieterMode('new')
         setMieterForm({
-          vorname:    d.mieter.vorname    ?? '', nachname:  d.mieter.nachname   ?? '',
-          email:      d.mieter.email      ?? '', telefon:   d.mieter.telefon    ?? '',
+          vorname:    d.mieter.vorname    ?? '', nachname:   d.mieter.nachname   ?? '',
+          email:      d.mieter.email      ?? '', telefon:    d.mieter.telefon    ?? '',
           iban:       '',
           strasse:    d.mieter.strasse    ?? '', hausnummer: d.mieter.hausnummer ?? '',
-          plz:        d.mieter.plz        ?? '', stadt:     d.mieter.stadt      ?? '',
+          plz:        d.mieter.plz        ?? '', stadt:      d.mieter.stadt      ?? '',
         })
       }
-      if (d?.vertrag) {
+      if (d.vertrag) {
         setVertragForm({
-          mietart:         d.vertrag.mietart        ?? 'wohnraum',
-          vertragsbeginn:  d.vertrag.vertragsbeginn ?? '',
-          vertragsende:    d.vertrag.vertragsende   ?? '',
-          nettomiete:      d.vertrag.nettomiete     != null ? String(d.vertrag.nettomiete)      : '',
+          mietart:         d.vertrag.mietart         ?? 'wohnraum',
+          vertragsbeginn:  d.vertrag.vertragsbeginn  ?? '',
+          vertragsende:    d.vertrag.vertragsende    ?? '',
+          nettomiete:      d.vertrag.nettomiete      != null ? String(d.vertrag.nettomiete)      : '',
           nkVorauszahlung: d.vertrag.nkVorauszahlung != null ? String(d.vertrag.nkVorauszahlung) : '',
-          kaution:         d.vertrag.kaution        != null ? String(d.vertrag.kaution)         : '',
-          mietflaecheM2:   d.vertrag.mietflaecheM2 != null ? String(d.vertrag.mietflaecheM2)   : '',
+          kaution:         d.vertrag.kaution         != null ? String(d.vertrag.kaution)         : '',
+          mietflaecheM2:   d.vertrag.mietflaecheM2  != null ? String(d.vertrag.mietflaecheM2)   : '',
         })
       }
       setOcrDone(true)
-      toast.success('KI-Extraktion abgeschlossen – Felder prüfen')
-    } catch { toast.error('KI-Extraktion fehlgeschlagen') }
-    finally   { setOcrLoading(false) }
-  }
-
-  // ── Dokument Upload Handler ───────────────────────────────────
-  async function handleDokUpload() {
-    const file = dokFileRef.current?.files?.[0]
-    if (!file || !selectedEinheit) { toast.error('Datei auswählen'); return }
-    setDokUploading(true)
-    try {
-      const fd = new FormData(); fd.append('file', file)
-      await dokumenteApi.upload(fd, { einheitId: selectedEinheit.id, dokumentKategorie: dokKategorie })
-      qc.invalidateQueries({ queryKey: ['dokumente', selectedEinheit.id] })
-      toast.success('Dokument hochgeladen')
-      if (dokFileRef.current) dokFileRef.current.value = ''
-    } catch (err: any) { toast.error(err?.response?.data?.error?.message ?? 'Upload fehlgeschlagen') }
-    finally { setDokUploading(false) }
+      const hatDaten = !!(d.mieter?.nachname || d.vertrag?.nettomiete)
+      if (hatDaten) toast.success('Mietvertrag erkannt – Felder prüfen und bestätigen')
+      else toast.warning('Dokument konnte nicht ausgelesen werden – bitte Felder manuell ausfüllen')
+    } catch (err: any) {
+      const msg = err?.response?.data?.error?.message ?? 'KI-Extraktion fehlgeschlagen'
+      toast.error(msg)
+    } finally {
+      setOcrLoading(false)
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────────
@@ -316,7 +354,7 @@ export default function EinheitenPage() {
     setEinheitOpen(true)
   }
 
-  const einheiten: Einheit[] = data?.data?.data ?? []
+  const einheiten: Einheit[] = data?.data?.data?.items ?? data?.data?.data ?? []
   const objekte               = objData?.data?.data ?? []
   const mieter                = miData?.data?.data  ?? []
   const vertraege: Vertrag[]  = vertragData?.data?.data ?? []
@@ -352,16 +390,18 @@ export default function EinheitenPage() {
                 const typ  = TYPEN[e.einheitenTyp] ?? TYPEN.sonstiges
                 const Icon = TYP_ICON[e.einheitenTyp] ?? Layers
                 const fl   = e.wohnflaecheM2 ?? e.nutzflaecheM2
+                const pruefen = e.bezeichnung.toUpperCase().includes('ROT') || e.bezeichnung.toUpperCase().includes('PRÜFEN')
                 return (
-                  <Card key={e.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => { setSelectedEinheit(e); setSheetTab('mieter') }}>
+                  <Card key={e.id} className={`cursor-pointer hover:shadow-md transition-shadow ${pruefen ? 'border-red-300 bg-red-50 ring-1 ring-red-200' : ''}`} onClick={() => { setSelectedEinheit(e); setSheetTab('mieter') }}>
                     <CardContent className="p-4 flex gap-3">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                        <Icon className="h-5 w-5 text-blue-600" />
+                      <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${pruefen ? 'bg-red-100' : 'bg-blue-50'}`}>
+                        <Icon className={`h-5 w-5 ${pruefen ? 'text-red-600' : 'text-blue-600'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-semibold text-sm truncate">{e.bezeichnung}</span>
                           <Badge variant={typ.badge} className="text-xs shrink-0">{typ.label}</Badge>
+                          {pruefen && <Badge className="text-xs shrink-0 bg-red-600 text-white border-red-600">Prüfen</Badge>}
                         </div>
                         {e.objekt && <p className="text-xs text-slate-500 truncate">{e.objekt.bezeichnung}</p>}
                         <div className="flex gap-3 mt-1 text-xs text-slate-400">
@@ -385,7 +425,10 @@ export default function EinheitenPage() {
             <>
               <SheetHeader className="mb-4">
                 <div className="flex items-center justify-between">
-                  <SheetTitle className="text-lg">{selectedEinheit.bezeichnung}</SheetTitle>
+                  <SheetTitle className="text-lg flex items-center gap-2">
+                    {selectedEinheit.bezeichnung}
+                    {(selectedEinheit.bezeichnung.toUpperCase().includes('ROT') || selectedEinheit.bezeichnung.toUpperCase().includes('PRÜFEN')) && <Badge className="bg-red-600 text-white border-red-600">Prüfen</Badge>}
+                  </SheetTitle>
                   <Button size="sm" variant="outline" onClick={() => openEditEinheit(selectedEinheit)}>
                     <Pencil className="h-3 w-3 mr-1" />Bearbeiten
                   </Button>
@@ -421,21 +464,21 @@ export default function EinheitenPage() {
                         variant="outline"
                         disabled={autoUploading}
                         onClick={() => autoFileRef.current?.click()}
-                        title="PDF/Bild hochladen — Mieter & Vertrag werden per KI automatisch erstellt"
+                        title="PDF hochladen – KI liest Mieter & Vertragsdaten aus und zeigt Vorschau"
                       >
                         {autoUploading
-                          ? <><Sparkles className="h-3 w-3 mr-1 animate-pulse" />Erkenne…</>
-                          : <><Upload className="h-3 w-3 mr-1" />Vertrag hochladen</>}
+                          ? <><Sparkles className="h-3 w-3 mr-1 animate-pulse" />KI liest aus…</>
+                          : <><Sparkles className="h-3 w-3 mr-1" />PDF auslesen (KI)</>}
                       </Button>
                       <Button size="sm" onClick={() => { setMieterForm(defaultMieterForm); setVertragForm(defaultVertragForm); setMieterMode('new'); setOcrDone(false); setVertragOpen(true) }}>
-                        <Plus className="h-3 w-3 mr-1" />Mieter & Vertrag
+                        <Plus className="h-3 w-3 mr-1" />Manuell anlegen
                       </Button>
                     </div>
                   </div>
                   {autoUploading && (
                     <div className="mb-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 flex items-center gap-2">
                       <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-                      KI liest den Vertrag aus, legt Mieter an und verknüpft ihn mit dieser Einheit…
+                      KI liest den Mietvertrag aus – Mieter, Fläche, Miete und Daten werden erkannt…
                     </div>
                   )}
                   {vertraege.length === 0
@@ -443,12 +486,26 @@ export default function EinheitenPage() {
                     : vertraege.map((v) => {
                         const mieterListe = v.mietvertragMieter?.map(mm => mieterName(mm.mieter)).join(', ') ?? '—'
                         const aktiv = !v.vertragsende || new Date(v.vertragsende) >= new Date()
+                        const isLoadingMail = loadingMailId === v.id
                         return (
-                          <div key={v.id} className={`rounded-lg border p-3 mb-2 ${aktiv ? 'border-green-200 bg-green-50' : 'border-slate-200 bg-slate-50'}`}>
+                          <div key={v.id} className={`rounded-lg border p-3 mb-2 ${selectedEinheit?.bezeichnung.toUpperCase().includes('ROT') ? 'border-red-300 bg-red-50' : (aktiv ? 'border-green-200 bg-green-50' : 'border-slate-200 bg-slate-50')}`}>
                             <div className="flex items-center justify-between mb-1">
                               <span className="font-medium text-sm">{mieterListe}</span>
-                              {aktiv ? <Badge className="text-xs bg-green-100 text-green-800 border-green-200">Aktiv</Badge>
-                                     : <Badge variant="secondary" className="text-xs">Beendet</Badge>}
+                              <div className="flex items-center gap-1.5">
+                                {aktiv ? <Badge className="text-xs bg-green-100 text-green-800 border-green-200">Aktiv</Badge>
+                                       : <Badge variant="secondary" className="text-xs">Beendet</Badge>}
+                                <Button
+                                  size="sm" variant="ghost"
+                                  className="h-6 px-1.5 text-slate-400 hover:text-blue-600"
+                                  onClick={() => handleOpenWelcome(v.id)}
+                                  disabled={isLoadingMail}
+                                  title="Willkommensmail & Zugangsdaten anzeigen"
+                                >
+                                  {isLoadingMail
+                                    ? <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+                                    : <Mail className="h-3.5 w-3.5" />}
+                                </Button>
+                              </div>
                             </div>
                             <div className="text-xs text-slate-500 flex flex-wrap gap-x-3 gap-y-0.5">
                               <span><CalendarDays className="h-3 w-3 inline mr-0.5" />{datum(v.vertragsbeginn)}{v.vertragsende ? ` – ${datum(v.vertragsende)}` : ' (unbefristet)'}</span>
@@ -603,19 +660,68 @@ export default function EinheitenPage() {
       {/* ── Mieter & Vertrag Dialog ──────────────────────────────── */}
       <Dialog open={vertragOpen} onOpenChange={setVertragOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Mieter & Mietvertrag anlegen – {selectedEinheit?.bezeichnung}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Mietvertrag – {selectedEinheit?.bezeichnung}
+            </DialogTitle>
+          </DialogHeader>
 
-          {/* OCR Upload */}
-          <div className="rounded-lg border border-dashed border-blue-200 bg-blue-50 p-3 mb-4">
-            <p className="text-sm font-medium text-blue-800 mb-2 flex items-center gap-1"><Sparkles className="h-4 w-4" />KI-Extraktion aus Mietvertrag</p>
-            <div className="flex gap-2 items-center flex-wrap">
-              <input ref={ocrFileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="text-xs text-slate-600 flex-1 file:mr-2 file:py-1 file:px-3 file:rounded file:text-xs file:border-0 file:bg-white file:text-blue-700" />
-              <Button size="sm" variant="outline" onClick={handleOcr} disabled={ocrLoading} className="shrink-0">
-                {ocrLoading ? 'Analysiere...' : 'Analysieren'}
-              </Button>
+          {/* OCR-Bereich: läuft / fertig / warten auf Datei */}
+          {ocrLoading ? (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 mb-4 flex items-center gap-3">
+              <Sparkles className="h-5 w-5 text-blue-600 animate-pulse shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-blue-800">KI liest den Mietvertrag aus…</p>
+                <p className="text-xs text-blue-600 mt-0.5">Mieter, Fläche, Miete und Zeitraum werden erkannt – bitte warten</p>
+              </div>
             </div>
-            {ocrDone && <p className="text-xs text-green-700 mt-1 flex items-center gap-1">✓ Felder wurden automatisch ausgefüllt – bitte prüfen</p>}
-          </div>
+          ) : ocrDone ? (
+            <div className={`rounded-lg border p-3 mb-4 flex items-center justify-between gap-2 ${
+              (mieterForm.nachname || vertragForm.nettomiete) ? 'border-green-200 bg-green-50' : 'border-orange-200 bg-orange-50'
+            }`}>
+              <div className="flex items-center gap-2">
+                <Sparkles className={`h-4 w-4 shrink-0 ${(mieterForm.nachname || vertragForm.nettomiete) ? 'text-green-600' : 'text-orange-500'}`} />
+                <div>
+                  {(mieterForm.nachname || vertragForm.nettomiete)
+                    ? <><p className="text-sm font-medium text-green-800">Mietvertrag erkannt – Felder prüfen und ggf. ergänzen</p>
+                        <p className="text-xs text-green-600 mt-0.5">Rot markierte Felder wurden nicht erkannt → manuell ausfüllen</p></>
+                    : <><p className="text-sm font-medium text-orange-800">Dokument konnte nicht ausgelesen werden</p>
+                        <p className="text-xs text-orange-600 mt-0.5">Bitte alle Felder manuell ausfüllen oder ein anderes PDF wählen</p></>
+                  }
+                </div>
+              </div>
+              {/* Nochmal analysieren */}
+              <label className="cursor-pointer shrink-0">
+                <input
+                  type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleOcr(f); e.target.value = '' }}
+                />
+                <span className="text-xs text-green-700 underline underline-offset-2 hover:text-green-900">anderen PDF wählen</span>
+              </label>
+            </div>
+          ) : (
+            /* Drop-Zone: Datei wählen oder reinziehen → OCR startet sofort */
+            <label
+              className="block rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 hover:bg-blue-100 transition cursor-pointer p-4 mb-4"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault()
+                const f = e.dataTransfer.files?.[0]
+                if (f) handleOcr(f)
+              }}
+            >
+              <input
+                type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleOcr(f); e.target.value = '' }}
+              />
+              <div className="flex flex-col items-center gap-1 text-center pointer-events-none">
+                <Upload className="h-7 w-7 text-blue-400 mb-1" />
+                <p className="text-sm font-medium text-blue-700">Mietvertrag hier ablegen oder klicken</p>
+                <p className="text-xs text-blue-500">PDF, JPG oder PNG · KI liest automatisch aus</p>
+              </div>
+            </label>
+          )}
 
           {/* Mieter */}
           <div className="mb-4">
@@ -633,10 +739,25 @@ export default function EinheitenPage() {
               </Select>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                {([['vorname','Vorname'],['nachname','Nachname'],['email','E-Mail'],['telefon','Telefon'],['strasse','Straße'],['hausnummer','Hausnummer'],['plz','PLZ'],['stadt','Stadt'],['iban','IBAN']] as [keyof typeof defaultMieterForm, string][]).map(([k, l]) => (
+                {([
+                  ['vorname','Vorname',false],
+                  ['nachname','Nachname *',true],
+                  ['email','E-Mail',false],
+                  ['telefon','Telefon',false],
+                  ['strasse','Straße',false],
+                  ['hausnummer','Hausnummer',false],
+                  ['plz','PLZ',false],
+                  ['stadt','Stadt',false],
+                  ['iban','IBAN',false],
+                ] as [keyof typeof defaultMieterForm, string, boolean][]).map(([k, l, required]) => (
                   <div key={k} className={k === 'iban' ? 'col-span-2' : ''}>
-                    <Label className="text-xs">{l}</Label>
-                    <Input className="h-8 mt-1 text-sm" value={mieterForm[k]} onChange={e => setMieterForm(f => ({ ...f, [k]: e.target.value }))} />
+                    <Label className={`text-xs ${ocrDone && required && !mieterForm[k] ? 'text-red-600' : ''}`}>{l}</Label>
+                    <Input
+                      className={`h-8 mt-1 text-sm ${ocrDone && required && !mieterForm[k] ? 'border-red-400 bg-red-50 focus:ring-red-300' : ''}`}
+                      value={mieterForm[k]}
+                      onChange={e => setMieterForm(f => ({ ...f, [k]: e.target.value }))}
+                      placeholder={ocrDone && required && !mieterForm[k] ? '⚠ Nicht erkannt – bitte eintragen' : ''}
+                    />
                   </div>
                 ))}
               </div>
@@ -654,10 +775,23 @@ export default function EinheitenPage() {
                   <SelectContent><SelectItem value="wohnraum">Wohnraum</SelectItem><SelectItem value="gewerbe">Gewerbe</SelectItem></SelectContent>
                 </Select>
               </div>
-              {([['vertragsbeginn','Vertragsbeginn','date'],['vertragsende','Vertragsende (leer = unbefristet)','date'],['nettomiete','Nettomiete €','number'],['nkVorauszahlung','NK-Vorauszahlung €','number'],['kaution','Kaution €','number'],['mietflaecheM2','Mietfläche m² (bei Teilfläche)','number']] as [keyof typeof defaultVertragForm, string, string][]).map(([k, l, t]) => (
-                <div key={k} className={['vertragsende','mietflaecheM2'].includes(k) ? '' : ''}>
-                  <Label className="text-xs">{l}</Label>
-                  <Input className="h-8 mt-1 text-sm" type={t} value={vertragForm[k]} onChange={e => setVertragForm(f => ({ ...f, [k]: e.target.value }))} />
+              {([
+                ['vertragsbeginn','Vertragsbeginn *','date',true],
+                ['vertragsende','Vertragsende (leer = unbefristet)','date',false],
+                ['nettomiete','Nettomiete € *','number',true],
+                ['nkVorauszahlung','NK-Vorauszahlung €','number',false],
+                ['kaution','Kaution €','number',false],
+                ['mietflaecheM2','Mietfläche m²','number',false],
+              ] as [keyof typeof defaultVertragForm, string, string, boolean][]).map(([k, l, t, required]) => (
+                <div key={k}>
+                  <Label className={`text-xs ${ocrDone && required && !vertragForm[k] ? 'text-red-600' : ''}`}>{l}</Label>
+                  <Input
+                    className={`h-8 mt-1 text-sm ${ocrDone && required && !vertragForm[k] ? 'border-red-400 bg-red-50' : ''}`}
+                    type={t}
+                    value={vertragForm[k]}
+                    placeholder={ocrDone && required && !vertragForm[k] ? '⚠ Pflichtfeld' : ''}
+                    onChange={e => setVertragForm(f => ({ ...f, [k]: e.target.value }))}
+                  />
                 </div>
               ))}
             </div>
@@ -665,9 +799,98 @@ export default function EinheitenPage() {
 
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setVertragOpen(false)}>Abbrechen</Button>
-            <Button onClick={() => vertragMut.mutate()} disabled={vertragMut.isPending || !vertragForm.vertragsbeginn}>
-              {vertragMut.isPending ? 'Speichern...' : 'Anlegen'}
+            <Button
+              onClick={() => vertragMut.mutate()}
+              disabled={vertragMut.isPending || !vertragForm.vertragsbeginn || !vertragForm.nettomiete || (mieterMode === 'new' && !mieterForm.nachname)}
+            >
+              {vertragMut.isPending ? 'Speichern...' : 'Mietvertrag anlegen'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Willkommensmail Dialoge ─────────────────────────────── */}
+      <Dialog open={welcomePromptOpen} onOpenChange={setWelcomePromptOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Mail className="h-4 w-4" />Willkommensmail vorbereiten?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p>Für diesen neuen Mietvertrag wurde ein eigener Mieterportal-Zugang erstellt.</p>
+            {welcomeDraft && (
+              <div className="rounded-lg border bg-slate-50 p-3 text-xs space-y-1">
+                <p><span className="text-muted-foreground">Mieter:</span> {welcomeDraft.mieterName}</p>
+                <p><span className="text-muted-foreground">Portal:</span> {welcomeDraft.portalUrl}</p>
+                <p><span className="text-muted-foreground">Benutzer:</span> {welcomeDraft.login}</p>
+                <p><span className="text-muted-foreground">Passwort:</span> {welcomeDraft.passwort}</p>
+                <p><span className="text-muted-foreground">Ansprechpartner:</span> {welcomeDraft.ansprechpartner.name}</p>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">Es wird nichts automatisch gesendet. Du kannst den Text prüfen und selbst verschicken.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWelcomePromptOpen(false)}>Nein</Button>
+            <Button onClick={() => { setWelcomePromptOpen(false); setWelcomeDetailOpen(true) }}>Ja, Mail anzeigen</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={welcomeDetailOpen} onOpenChange={setWelcomeDetailOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />Willkommensmail & Zugangsdaten – {welcomeDraft?.mieterName}
+            </DialogTitle>
+          </DialogHeader>
+          {welcomeDraft && (
+            <div className="space-y-4">
+
+              {/* Zugangsdaten-Box — das Wichtigste oben */}
+              <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
+                <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-3">Mieterportal-Zugangsdaten</p>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  <div>
+                    <p className="text-xs text-slate-500">Portal-Link</p>
+                    <p className="font-medium text-blue-700 break-all">{welcomeDraft.portalUrl}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Mieter</p>
+                    <p className="font-medium">{welcomeDraft.mieterName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Benutzername</p>
+                    <p className="font-mono font-semibold text-slate-800 bg-white rounded px-2 py-1 border text-xs">{welcomeDraft.login}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Passwort (Erstanmeldung)</p>
+                    <p className="font-mono font-semibold text-slate-800 bg-white rounded px-2 py-1 border text-xs">{welcomeDraft.passwort}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-blue-600 mt-3">
+                  ℹ️ Der Mieter kann nach der Erstanmeldung sein Passwort ändern. Er sieht nur seine eigenen Daten.
+                </p>
+              </div>
+
+              {/* Mail-Entwurf */}
+              <div className="grid gap-2 text-sm">
+                <div><Label className="text-xs">An (E-Mail des Mieters)</Label>
+                  <Input readOnly value={welcomeDraft.mail.an || '— E-Mail beim Mieter hinterlegen —'}
+                    className={!welcomeDraft.mail.an ? 'border-orange-300 bg-orange-50 text-orange-700' : ''} />
+                </div>
+                <div><Label className="text-xs">Betreff</Label><Input readOnly value={welcomeDraft.mail.betreff} /></div>
+                <div>
+                  <Label className="text-xs">Mailtext</Label>
+                  <textarea readOnly className="mt-1 min-h-[280px] w-full rounded-md border bg-white p-3 text-sm font-mono" value={welcomeDraft.mail.text} />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Es wird nichts automatisch versendet. Mail kopieren und selbst verschicken.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWelcomeDetailOpen(false)}>Schließen</Button>
+            <Button onClick={copyWelcomeMail}><Copy className="h-4 w-4 mr-1" />Mail kopieren</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

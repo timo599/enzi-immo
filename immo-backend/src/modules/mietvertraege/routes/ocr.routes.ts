@@ -71,19 +71,36 @@ export const mietvertragOcrRoutes: FastifyPluginAsync = async (fastify) => {
     try {
       const response = await client.messages.create({
         model: process.env['ANTHROPIC_MODEL'] ?? 'claude-sonnet-4-6',
-        max_tokens: 1024,
+        max_tokens: 2048,
         messages: [{ role: 'user', content: [contentBlock, { type: 'text', text: PROMPT }] }],
       })
 
       const raw = response.content.filter(b => b.type === 'text').map(b => (b as any).text).join('')
-      const jsonMatch = raw.match(/\{[\s\S]*\}/)
-      if (!jsonMatch) return reply.status(422).send({ error: { message: 'Extraktion fehlgeschlagen' } })
 
-      const extracted = JSON.parse(jsonMatch[0])
+      // JSON aus Antwort extrahieren — auch wenn Claude Markdown-Fences verwendet
+      const jsonMatch = raw.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) ?? raw.match(/(\{[\s\S]*\})/)
+      if (!jsonMatch) {
+        fastify.log.warn({ raw: raw.slice(0, 200) }, 'OCR: Kein JSON in Antwort gefunden')
+        return reply.send({ data: {} })   // leeres Objekt statt Fehler → Dialog öffnet sich trotzdem
+      }
+
+      let extracted: unknown
+      try {
+        extracted = JSON.parse(jsonMatch[1] ?? jsonMatch[0])
+      } catch {
+        fastify.log.warn({ raw: raw.slice(0, 200) }, 'OCR: JSON-Parse fehlgeschlagen')
+        return reply.send({ data: {} })
+      }
+
       return reply.send({ data: extracted })
-    } catch (err) {
+    } catch (err: any) {
       fastify.log.error(err, 'OCR Mietvertrag fehlgeschlagen')
-      return reply.status(500).send({ error: { message: 'KI-Extraktion fehlgeschlagen' } })
+      const msg =
+        err?.status === 401 ? 'Anthropic-API-Key ungültig' :
+        err?.status === 429 ? 'KI-Rate-Limit – bitte kurz warten' :
+        err?.error?.error?.message?.includes('not valid') ? 'PDF konnte nicht gelesen werden – bitte anderes Format versuchen' :
+        'KI-Extraktion fehlgeschlagen'
+      return reply.status(502).send({ error: { message: msg } })
     }
   })
 }

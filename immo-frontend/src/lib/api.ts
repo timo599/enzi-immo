@@ -124,6 +124,9 @@ export type DokumentKategorie =
   | 'zaehler_foto'
   | 'zaehlerstand'
   | 'betriebskostenabrechnung'
+  | 'wohngeberbescheinigung'
+  | 'abfallkalender'
+  | 'hausordnung'
   | 'versicherung'
   | 'grundsteuer'
   | 'korrespondenz'
@@ -249,6 +252,12 @@ export const zaehlerApi = {
   deleteStand:  (standId: string) => api.delete(`/zaehler/staende/${standId}`),
 }
 
+
+// ── Mieterportal Admin-Onboarding ────────────────────────────────────────────
+export const portalAdminApi = {
+  onboardingForMietvertrag: (mietvertragId: string) => api.post(`/portal/onboarding/mietvertrag/${mietvertragId}`, {}),
+}
+
 // ── Minol-OCR ────────────────────────────────────────────────────────────────
 export const minolApi = {
   ocr: (formData: FormData) =>
@@ -265,4 +274,53 @@ export const lernmodusApi = {
   beantworten: (frageId: string, body: { antwortWert: string; einheitId?: string | null; ueberspringen?: boolean }) =>
     api.patch(`/lernmodus/fragen/${frageId}/beantworten`, body),
   abschliessen:(id: string) => api.post(`/lernmodus/sessionen/${id}/abschliessen`),
+}
+
+// ── Betrieb / Portfolio-Erweiterungen ────────────────────────────────────────
+export const betriebApi = {
+  uebersicht:    () => api.get('/betrieb/uebersicht'),
+
+  eigentuemer: {
+    list:   (params?: Record<string, unknown>) => api.get('/betrieb/eigentuemer', { params }),
+    create: (body: unknown) => api.post('/betrieb/eigentuemer', body),
+    update: (id: string, body: unknown) => api.patch(`/betrieb/eigentuemer/${id}`, body),
+    delete: (id: string) => api.delete(`/betrieb/eigentuemer/${id}`),
+    linkObjekt: (id: string, body: unknown) => api.post(`/betrieb/eigentuemer/${id}/objekte`, body),
+  },
+  dienstleister: {
+    list:   (params?: Record<string, unknown>) => api.get('/betrieb/dienstleister', { params }),
+    create: (body: unknown) => api.post('/betrieb/dienstleister', body),
+    update: (id: string, body: unknown) => api.patch(`/betrieb/dienstleister/${id}`, body),
+    delete: (id: string) => api.delete(`/betrieb/dienstleister/${id}`),
+  },
+  interessenten: {
+    list:   (params?: Record<string, unknown>) => api.get('/betrieb/interessenten', { params }),
+    create: (body: unknown) => api.post('/betrieb/interessenten', body),
+    update: (id: string, body: unknown) => api.patch(`/betrieb/interessenten/${id}`, body),
+    delete: (id: string) => api.delete(`/betrieb/interessenten/${id}`),
+  },
+  pinboard: {
+    list:   (params?: Record<string, unknown>) => api.get('/betrieb/pinboard', { params }),
+    create: (body: unknown) => api.post('/betrieb/pinboard', body),
+    update: (id: string, body: unknown) => api.patch(`/betrieb/pinboard/${id}`, body),
+    delete: (id: string) => api.delete(`/betrieb/pinboard/${id}`),
+  },
+  esg: {
+    list:   (params?: Record<string, unknown>) => api.get('/betrieb/esg', { params }),
+    create: (body: unknown) => api.post('/betrieb/esg', body),
+    update: (id: string, body: unknown) => api.patch(`/betrieb/esg/${id}`, body),
+    delete: (id: string) => api.delete(`/betrieb/esg/${id}`),
+  },
+  workflows: {
+    list:   (params?: Record<string, unknown>) => api.get('/betrieb/workflows', { params }),
+    create: (body: unknown) => api.post('/betrieb/workflows', body),
+    update: (id: string, body: unknown) => api.patch(`/betrieb/workflows/${id}`, body),
+    delete: (id: string) => api.delete(`/betrieb/workflows/${id}`),
+  },
+  ki: {
+    wissen:      (frage: string) => api.post('/betrieb/ki/wissen', { frage }),
+    schaden:     (beschreibung: string) => api.post('/betrieb/ki/schaden', { beschreibung }),
+    vertrag:     (text: string) => api.post('/betrieb/ki/vertrag', { text }),
+    nebenkosten: (params?: Record<string, unknown>) => api.get('/betrieb/ki/nebenkosten-pruefung', { params }),
+  },
 }

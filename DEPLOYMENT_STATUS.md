@@ -1,125 +1,105 @@
-# Deployment-Status: Enzi's Immobilienverwaltung
+# Deployment-Status: Enzis Immobilienverwaltung
 
-> Letzte Aktualisierung: 18.05.2026  
-> Ziel: App dauerhaft online auf Vercel (Frontend) + Fly.io (Backend)
-
----
+> Letzte Aktualisierung: 07.06.2026
 
 ## Aktueller Stand
 
-### Erledigt ✅
-- [x] Komplette App entwickelt und lokal getestet
-- [x] GitHub Repo: **https://github.com/timo599/enzi-immo** (privat)
-- [x] Neon PostgreSQL: verbunden, alle Migrationen eingespielt
-- [x] Upstash Redis: konfiguriert
-- [x] Datenbank geseedet: Admin-User `NCVerwaltung / balou` + 15 Kostenarten
-- [x] **Frontend LIVE**: https://enzi-immo.vercel.app ✅
-- [x] Backend-Config auf Render: render.yaml vorhanden
+Die Immobilienverwaltung ist lokal auf dem Mac lauffähig und zusätzlich über einen Cloudflare-Remote-Link von externen Geräten erreichbar, solange der Mac eingeschaltet ist und der Starter läuft.
 
-### Noch offen
-- [ ] Backend auf Render deployen — render.yaml ist gepusht, muss im Render-Dashboard noch verbunden werden
-- [ ] Backend-URL bestätigen (sollte https://enzi-immo-backend.onrender.com sein)
-- [ ] Render: Env-Variablen eintragen (DATABASE_URL, REDIS_URL etc.)
-- [ ] Datei-Upload (S3) konfigurieren — optional für MVP
+## Lokaler Zugriff
 
----
+| Dienst | URL | Status |
+|---|---|---|
+| Frontend | `http://localhost:3001` | ✅ geprüft |
+| Backend Health | `http://localhost:3000/health` | ✅ geprüft |
+| Betrieb & Portfolio | `http://localhost:3001/betrieb` | ✅ geprüft |
 
-## Wie weitermachen (nächste Session)
+## Externer Zugriff
 
-### Schritt 1 — GitHub Token erstellen (manuell)
-1. Browser öffnen → https://github.com/settings/tokens/new?scopes=repo,workflow,read:org&description=enzi-immo-cli
-2. Ablaufzeit: **No expiration**
-3. Scopes: `repo` ✅, `workflow` ✅, `read:org` ✅
-4. Auf **Generate token** klicken
-5. Token (beginnt mit `ghp_...`) kopieren
+Aktueller Quick-Link:
 
-### Schritt 2 — Token in Terminal eingeben
-```bash
-export PATH="/Users/User/.fly/bin:$PATH"
-echo "DEIN_TOKEN_HIER" | gh auth login --with-token
-gh repo create enzi-immo --private --source="/Users/User/Desktop/Enzis Immobilienverwaltung" --push
+```text
+https://helping-inclusion-warren-countries.trycloudflare.com
 ```
 
-### Schritt 3 — Fly.io einrichten
-```bash
-export PATH="/Users/User/.fly/bin:$PATH"
-flyctl auth login
-cd "/Users/User/Desktop/Enzis Immobilienverwaltung/immo-backend"
-flyctl launch --no-deploy --name enzi-immo-backend --region fra
+Der Link steht zusätzlich immer aktuell in:
+
+```text
+/Users/User/Desktop/Enzis Immobilienverwaltung/REMOTE-ZUGANG-AKTUELL.txt
+/Users/User/Desktop/Immobilienverwaltung Zugangsdaten.txt
+/Users/User/Desktop/Enzis Immobilienverwaltung/Immobilienverwaltung Zugangsdaten.txt
 ```
 
-### Schritt 4 — Neon Datenbank
-- https://neon.tech → New Project → Name: enzi-immo, Region: Frankfurt
-- Connection-String notieren: `postgresql://...`
+Geprüft über öffentliche Cloudflare-DNS-Auflösung:
 
-### Schritt 5 — Upstash Redis
-- https://upstash.com → Create Database → Name: enzi-immo, Region: eu-west-1
-- Redis-URL notieren: `rediss://...`
-
-### Schritt 6 — Secrets auf Fly.io setzen
-```bash
-export PATH="/Users/User/.fly/bin:$PATH"
-cd "/Users/User/Desktop/Enzis Immobilienverwaltung/immo-backend"
-flyctl secrets set \
-  DATABASE_URL="<Neon Connection String>" \
-  REDIS_URL="<Upstash Redis URL>" \
-  S3_ENDPOINT="https://fly-storage-fra.fly.io" \
-  S3_BUCKET="enzi-immo-files" \
-  S3_ACCESS_KEY="<key>" \
-  S3_SECRET_KEY="<secret>" \
-  S3_REGION="auto" \
-  S3_FORCE_PATH_STYLE="true" \
-  ANTHROPIC_API_KEY="<sk-ant-...>" \
-  JWT_SECRET="$(openssl rand -hex 32)" \
-  CORS_ORIGIN="https://enzi-immo.vercel.app"
-flyctl deploy
-```
-
-### Schritt 7 — Frontend auf Vercel
-1. https://vercel.com → mit GitHub anmelden
-2. New Project → Repo `enzi-immo` → Root Directory: `immo-frontend`
-3. Env Variable: `BACKEND_INTERNAL_URL` = `https://enzi-immo-backend.fly.dev`
-4. Deploy
-
-### Schritt 8 — Seed (Admin-User anlegen)
-```bash
-export PATH="/Users/User/.fly/bin:$PATH"
-cd "/Users/User/Desktop/Enzis Immobilienverwaltung/immo-backend"
-flyctl ssh console -C "npm run db:seed"
-```
-
----
-
-## Live-Zugangsdaten (nach Deployment)
-
-| | |
+| Pfad | Status |
 |---|---|
-| **URL** | https://enzi-immo.vercel.app |
-| **Benutzer** | `NCVerwaltung` |
-| **Passwort** | `balou` |
+| `/health` | ✅ 200 |
+| `/login` | ✅ 200 |
+| `/betrieb` | ✅ 200 |
 
-⚠️ Passwort nach erstem Login sofort ändern!
+Hinweis: Der Quick-Link kann sich nach einem Neustart ändern. Der Remote-Wächter `Starter/Remote-Waechter.command` startet den Tunnel neu und schreibt den neuen Link automatisch in die Zugangsdateien.
 
----
+## Desktop-Starter
 
-## Wichtige Pfade
-
-| Was | Pfad |
+| Datei | Status |
 |---|---|
-| Projektordner | `/Users/User/Desktop/Enzis Immobilienverwaltung/` |
-| Starter-Icon | `/Users/User/Desktop/Enzis Immobilienverwaltung Starten.command` |
-| Backend | `/Users/User/Desktop/Enzis Immobilienverwaltung/immo-backend/` |
-| Frontend | `/Users/User/Desktop/Enzis Immobilienverwaltung/immo-frontend/` |
-| Fly CLI | `/Users/User/.fly/bin/flyctl` |
-| GitHub CLI | `/Users/User/.fly/bin/gh` |
+| `/Users/User/Desktop/Enzis Immobilienverwaltung.app` | ✅ App mit Immobilien-Icon |
+| `/Users/User/Desktop/Enzis Immobilienverwaltung/Starter/Starten.command` | ✅ startet Backend, Frontend und Remote-Wächter |
+| `/Users/User/Desktop/Enzis Immobilienverwaltung/Starter/Stoppen.command` | ✅ stoppt lokale Dienste |
+| `/Users/User/Desktop/Enzis Immobilienverwaltung/Starter/Backup.command` | ✅ manuelles Backup |
 
----
+## Logins
 
-## Anthropic API Key
-- Lokal gesetzt in: `/Users/User/Desktop/Enzis Immobilienverwaltung/immo-backend/.env`
-- Für Produktion: als `ANTHROPIC_API_KEY` Fly.io Secret setzen
+| Benutzer | Passwort | Rechte |
+|---|---|---|
+| `NCVerwaltung` | `balou` | Vollzugriff Admin |
+| `Axel` | `balou` | Vollzugriff Admin |
+| `Bastian` | `balou` | Vollzugriff Admin |
+| `Kirsten` | `balou` | Vollzugriff Admin |
+| `Jürgen` | `Enzi` | Alles ansehen, aktiv nur Enzi-Chat |
 
----
+## Build- und API-Prüfung
 
-## Schnell-Start (lokal)
-Doppelklick auf: `/Users/User/Desktop/Enzis Immobilienverwaltung Starten.command`
+| Prüfung | Ergebnis |
+|---|---|
+| Backend TypeScript `npx tsc --noEmit` | ✅ erfolgreich |
+| Frontend Build `npm run build` | ✅ erfolgreich |
+| Backend Tests `npm test` | ✅ 79/79 Tests erfolgreich |
+| Frontend Lint `npm run lint` | ✅ 0 Fehler, nur Warnungen |
+| API-Smoke-Test | ✅ 49 zentrale API-Aufrufe erfolgreich |
+| Frontend-Routen-Test | ✅ 22 Hauptseiten mit 200 |
+| Betrieb API `/uebersicht` | ✅ 200 |
+| Betrieb API `/eigentuemer` | ✅ 200 |
+| Betrieb API `/dienstleister` | ✅ 200 |
+| Betrieb API `/interessenten` | ✅ 200 |
+| Betrieb API `/pinboard` | ✅ 200 |
+| Betrieb API `/esg` | ✅ 200 |
+| Betrieb API `/workflows` | ✅ 200 |
+| KI-Wissenssuche Beispiel `R154` | ✅ Treffer gefunden |
+
+## Neu ergänzt am 06.06.2026 und geprüft am 07.06.2026
+
+- Betrieb & Portfolio als neuer Hauptbereich
+- Eigentümerstammdaten und Objektzuordnung
+- Dienstleistermanagement
+- CRM/Interessentenverwaltung
+- Digitales Pinboard / Schwarzes Brett
+- ESG-Kennzahlen je Objekt
+- Workflow-Vorlagen, Wiedervorlagen und Eskalationslogik
+- KI-Wissenssuche über Mieter, Objekte, Einheiten, Dokumente, Reparaturen und Aufgaben
+- KI-Schadensanalyse
+- Vertrags- und Rechtsassistent
+- KI-Nebenkostenprüfung
+
+## Fester Link
+
+Ein dauerhaft gleichbleibender Remote-Link ist vorbereitet, braucht aber einmalig ein Cloudflare-Konto und eine Domain/Subdomain.
+
+Einrichtung:
+
+```text
+/Users/User/Desktop/Enzis Immobilienverwaltung/Starter/Festen Remote-Link einrichten.command
+```
+
+Ohne Cloudflare-Konto/Domain sind Quick-Links technisch wechselnd.

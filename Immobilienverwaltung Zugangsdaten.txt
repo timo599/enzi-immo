@@ -1,0 +1,117 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║         Enzis Immobilienverwaltung — Zugangsdaten                   ║
+║         Stand: 08.06.2026                                           ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════════
+  APP STARTEN
+═══════════════════════════════════════════════════════════════════════
+
+  Desktop-App:      Doppelklick auf "Enzis Immobilienverwaltung" (Gebäude-Icon)
+                    → öffnet automatisch Backend, Frontend & Tunnel
+
+  Lokal (nur dieser Mac):
+  → http://localhost:3001
+
+  Extern / Fernzugriff (anderer PC, Handy, Tablet):
+  → https://site-burn-amplifier-product.trycloudflare.com
+    ⚠ Dieser Quick-Link kann sich nach einem Neustart ändern!
+      Aktueller Link immer in:
+      /Users/User/Desktop/Enzis Immobilienverwaltung/REMOTE-ZUGANG-AKTUELL.txt
+
+
+═══════════════════════════════════════════════════════════════════════
+  ZUGANGSDATEN — BENUTZERNAME / PASSWORT / RECHTE
+═══════════════════════════════════════════════════════════════════════
+
+  Login-Seite: http://localhost:3001/login
+            oder Extern-Link + /login
+
+  Benutzername      Passwort    Rechte
+  ─────────────────────────────────────────────────────────────────
+  NCVerwaltung      balou       Vollzugriff Admin (Hauptaccount)
+  Axel              balou       Vollzugriff Admin
+  Bastian           balou       Vollzugriff Admin
+  Kirsten           balou       Vollzugriff Admin
+  Jürgen            Enzi        Eigentümer-Ansicht (nur lesen)
+  ─────────────────────────────────────────────────────────────────
+
+  Hinweis: Benutzername = Login-Feld (nicht E-Mail nötig).
+  Passwörter können im Tool unter Einstellungen → Benutzer geändert werden.
+
+
+═══════════════════════════════════════════════════════════════════════
+  WICHTIGES ZUM FERNZUGRIFF
+═══════════════════════════════════════════════════════════════════════
+
+  • Der Fernzugriff funktioniert nur, solange:
+    - der Mac eingeschaltet ist
+    - "Enzis Immobilienverwaltung" gestartet wurde (Desktop-App)
+
+  • Quick-Link (kostenlos, wechselnd):
+    Cloudflare erzeugt bei jedem Start einen neuen Link.
+    Der Remote-Wächter im Hintergrund erkennt das und schreibt den
+    neuen Link automatisch in REMOTE-ZUGANG-AKTUELL.txt
+
+  • Fester Link (einmalige Einrichtung, kostenlos):
+    → Cloudflare-Konto + eigene Domain/Subdomain nötig
+    → Setup-Script: Starter/Festen Remote-Link einrichten.command
+    → Empfehlung: z.B. verwaltung.nc-verwaltung.de
+
+
+═══════════════════════════════════════════════════════════════════════
+  WEITERGABE AN ANDERE
+═══════════════════════════════════════════════════════════════════════
+
+  Diese Infos einfach weitergeben (z.B. per WhatsApp):
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  Link:      https://site-burn-amplifier-product.trycloudflare.com
+  │  Benutzer:  [Name aus Tabelle oben]
+  │  Passwort:  [Passwort aus Tabelle oben]
+  └─────────────────────────────────────────────────────────────────┘
+
+  Mieter bekommen KEINE dieser Zugangsdaten.
+  Mieter erhalten separate Portal-Zugänge (nur eigene Dokumente/Abrechnung).
+
+
+═══════════════════════════════════════════════════════════════════════
+  BACKUP
+═══════════════════════════════════════════════════════════════════════
+
+  Automatisch:  Täglich 03:15 Uhr
+  Speicherort:  /Users/User/Desktop/Enzis Immobilienverwaltung/backups/
+  Manuell:      Doppelklick auf Starter/Backup.command
+
+
+═══════════════════════════════════════════════════════════════════════
+  KONTAKT
+═══════════════════════════════════════════════════════════════════════
+
+  Benjamin Enzmann:  01723219754 · b.enzmann@nc-verwaltung.de
+  Jürgen Enzmann:    01726611395 · Juergen.enzmann@web.de
+
+
+═══════════════════════════════════════════════════════════════════════
+  NEUE FUNKTIONEN (Stand Juni 2026)
+═══════════════════════════════════════════════════════════════════════
+
+  Zähler & Verbrauch:
+  → Strom-, Gas-, Wasser- und Heizungszähler je Einheit oder Objekt erfassbar
+  → Verbrauch wird automatisch aus den Ablesungen berechnet
+  → Unter Einheiten → Zähler-Tab oder Objekte → Zähler-Tab
+
+  Dokumente je Einheit/Objekt:
+  → Mietverträge, Rechnungen, Minol-Abrechnungen direkt bei Einheit hochladbar
+  → KI (Claude) liest Mietverträge & Minol-PDFs automatisch aus (OCR)
+  → Unter Einheiten → Dokumente-Tab
+
+  Minol / Heizkostenabrechnung:
+  → PDF hochladen → KI extrahiert Verbrauch je Einheit automatisch
+  → Unter Objekte → Minol-Tab
+
+  Betrieb-Bereich (linke Navigation):
+  → Eigentümer, Dienstleister, Interessenten/CRM, Pinboard, ESG, Workflows, KI-Prüfungen
+
+  KI-Suche:
+  → Findet Mieternamen, Objekte, Einheiten, Dokumente, Rechnungen, Reparaturen
