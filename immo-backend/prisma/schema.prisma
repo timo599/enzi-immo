@@ -243,6 +243,7 @@ model User {
   zugeordneteBuchungen     Buchungszeile[]    @relation("BuchungZuordner")
   leitfaeden               Leitfaden[]
   modulFortschritte        ModulFortschritt[]
+  zustaendigeTodos         Todo[]             @relation("TodoZustaendiger")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -1277,19 +1278,22 @@ model Todo {
   baustelleId  String?        @map("baustelle_id") @db.Uuid
   faelligAm    DateTime?      @map("faellig_am") @db.Date
   erledigtAm   DateTime?      @map("erledigt_am")
-  erstelltVon  String?        @map("erstellt_von")
-  erstelltAm   DateTime       @default(now()) @map("erstellt_am")
-  geaendertAm  DateTime?      @updatedAt @map("geaendert_am")
+  erstelltVon        String?        @map("erstellt_von")
+  erstelltAm         DateTime       @default(now()) @map("erstellt_am")
+  geaendertAm        DateTime?      @updatedAt @map("geaendert_am")
+  zustaendigerUserId String?        @map("zustaendiger_user_id") @db.Uuid
 
-  tenant      Tenant          @relation(fields: [tenantId], references: [id])
-  firma       Firma?          @relation(fields: [firmaId], references: [id])
-  objekt      Objekt?         @relation(fields: [objektId], references: [id])
-  einheit     Einheit?        @relation(fields: [einheitId], references: [id])
-  baustelle   Baustelle?      @relation(fields: [baustelleId], references: [id])
-  zuweisungen TodoZuweisung[]
+  tenant            Tenant          @relation(fields: [tenantId], references: [id])
+  firma             Firma?          @relation(fields: [firmaId], references: [id])
+  objekt            Objekt?         @relation(fields: [objektId], references: [id])
+  einheit           Einheit?        @relation(fields: [einheitId], references: [id])
+  baustelle         Baustelle?      @relation(fields: [baustelleId], references: [id])
+  zustaendigerUser  User?           @relation("TodoZustaendiger", fields: [zustaendigerUserId], references: [id], onDelete: SetNull)
+  zuweisungen       TodoZuweisung[]
 
   @@index([tenantId])
   @@index([status])
+  @@index([zustaendigerUserId])
   @@map("todos")
 }
 

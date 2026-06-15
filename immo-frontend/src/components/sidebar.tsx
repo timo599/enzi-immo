@@ -30,11 +30,13 @@ import {
   HardHat,
   BookOpen,
   GraduationCap,
+  NotebookText,
 } from 'lucide-react'
 import { QuickSearch } from './quick-search'
 
 const NAV = [
   { href: '/dashboard',       label: 'Dashboard',       icon: LayoutDashboard },
+  { href: '/betrieb',         label: 'Betrieb',          icon: ShieldCheck },
   { href: '/firmen',          label: 'Firmen',           icon: Briefcase },
   { href: '/objekte',         label: 'Objekte',          icon: Building2 },
   { href: '/einheiten',       label: 'Einheiten',        icon: Home },
@@ -52,8 +54,9 @@ const NAV = [
   { href: '/kaution',         label: 'Kautionen',         icon: Vault },
   { href: '/vpi',             label: 'VPI-Rechner',       icon: TrendingUp },
   { href: '/portal',          label: 'Mieter-Portal',     icon: KeyRound },
-  { href: '/todos',           label: 'Aufgaben',           icon: CheckSquare },
-  { href: '/baustellen',      label: 'Baustellen',         icon: HardHat },
+  { href: '/todos',              label: 'Aufgaben (To-Do)',    icon: CheckSquare },
+  { href: '/allgemeine-infos',   label: 'Allgemeine Infos',   icon: NotebookText },
+  { href: '/baustellen',         label: 'Baustellen',         icon: HardHat },
   { href: '/leitfaden',       label: 'Firmenleitfaden',    icon: BookOpen },
   { href: '/einarbeitung',    label: 'Einarbeitung',       icon: GraduationCap },
   { href: '/lernmodus',       label: 'Lernmodus',         icon: Brain },

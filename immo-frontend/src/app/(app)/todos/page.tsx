@@ -68,6 +68,7 @@ const defaultForm = {
   titel: '', beschreibung: '', status: 'offen' as TodoStatus, prioritaet: 'mittel' as TodoPrio,
   kategorie: '', firmaId: '', objektId: '', einheitId: '', faelligAm: '',
   zuweisungen: [] as string[],
+  zustaendigerUserId: '' as string,
 }
 
 // ── Haupt-Seite ────────────────────────────────────────────────────────────────
@@ -79,6 +80,7 @@ export default function TodosPage() {
   const [filterPrio,     setFilterPrio]     = useState('')
   const [filterAssignee, setFilterAssignee] = useState('')
   const [search,         setSearch]         = useState('')
+  const [selectedUserId, setSelectedUserId] = useState<string>('alle') // User-Tab
 
   // Dialoge
   const [dialogOpen, setOpen]   = useState(false)
@@ -97,11 +99,16 @@ export default function TodosPage() {
   const { data: teamRes }   = useQuery({ queryKey: ['team'],   queryFn: () => api.get('/todos/team').then(r => r.data.data) })
   const { data: firmenRes } = useQuery({ queryKey: ['firmen'], queryFn: () => api.get('/firmen').then(r => r.data.data) })
   const { data: objekteRes }= useQuery({ queryKey: ['objekte'],queryFn: () => api.get('/objekte', { params: { pageSize: 500 } }).then(r => r.data.data) })
+  const { data: usersRes }  = useQuery({ queryKey: ['auth-users'], queryFn: () => api.get('/auth/users').then(r => r.data.data) })
 
   const todos:   Todo[]         = todosRes  ?? []
   const team:    TeamMitglied[] = teamRes   ?? []
   const firmen:  Firma[]        = firmenRes ?? []
   const objekte: Objekt[]       = objekteRes?? []
+  const users:   Array<{ id: string; vorname?: string; nachname?: string; email: string; rolle: string }> =
+    (usersRes ?? []).filter((u: any) => u.aktiv !== false)
+    // Nur einmalig je Benutzername (E-Mail-Duplikate rausfiltern)
+    .filter((u: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.email === u.email || x.vorname === u.vorname) === i)
 
   const today = new Date().toISOString().slice(0, 10)
 
@@ -116,6 +123,7 @@ export default function TodosPage() {
   // ── Gefilterte & sortierte Liste ─────────────────────────────────────────
   const filtered = useMemo(() => {
     let list = [...todos]
+    if (selectedUserId !== 'alle') list = list.filter(t => (t as any).zustaendigerUser?.id === selectedUserId)
     if (filterStatus !== 'alle') list = list.filter(t => t.status === filterStatus)
     if (filterPrio)     list = list.filter(t => t.prioritaet === filterPrio)
     if (filterAssignee) list = list.filter(t => t.zuweisungen.some(z => z.teamMitglied.id === filterAssignee))
@@ -141,7 +149,7 @@ export default function TodosPage() {
       if (b.faelligAm) return 1
       return b.erstelltAm.localeCompare(a.erstelltAm)
     })
-  }, [todos, filterStatus, filterPrio, filterAssignee, search, today])
+  }, [todos, selectedUserId, filterStatus, filterPrio, filterAssignee, search, today])
 
   // ── Mutationen ────────────────────────────────────────────────────────────
   const saveTodo = useMutation({
@@ -198,8 +206,14 @@ export default function TodosPage() {
       firmaId: t.firma?.id ?? '', objektId: t.objekt?.id ?? '', einheitId: t.einheit?.id ?? '',
       faelligAm: t.faelligAm ? t.faelligAm.slice(0, 10) : '',
       zuweisungen: t.zuweisungen.map(z => z.teamMitglied.id),
+      zustaendigerUserId: (t as any).zustaendigerUser?.id ?? '',
     })
     setOpen(true)
+  }
+
+  function userName(u: { vorname?: string; nachname?: string; email: string }) {
+    if (u.vorname) return u.vorname + (u.nachname && u.nachname !== 'None' ? ' ' + u.nachname : '')
+    return u.email
   }
   function toggleZuweisung(id: string) {
     setForm(f => ({
@@ -233,6 +247,38 @@ export default function TodosPage() {
           </div>
         }
       />
+
+      {/* ── User-Tabs ──────────────────────────────────────────────────── */}
+      <div className="flex gap-1.5 flex-wrap border-b pb-3">
+        <button
+          onClick={() => setSelectedUserId('alle')}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
+            selectedUserId === 'alle'
+              ? 'bg-primary text-primary-foreground border-primary'
+              : 'border-border bg-background hover:bg-muted text-muted-foreground'
+          }`}
+        >
+          Alle
+          <span className="ml-1.5 text-xs opacity-60">{todos.length}</span>
+        </button>
+        {users.map(u => {
+          const count = todos.filter(t => (t as any).zustaendigerUser?.id === u.id).length
+          return (
+            <button
+              key={u.id}
+              onClick={() => setSelectedUserId(u.id)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
+                selectedUserId === u.id
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'border-border bg-background hover:bg-muted text-muted-foreground'
+              }`}
+            >
+              {userName(u)}
+              {count > 0 && <span className="ml-1.5 text-xs opacity-60">{count}</span>}
+            </button>
+          )
+        })}
+      </div>
 
       {/* ── Stat-Karten ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -401,8 +447,13 @@ export default function TodosPage() {
                             📅 {new Date(todo.faelligAm).toLocaleDateString('de-DE')}
                           </span>
                         )}
+                        {(todo as any).zustaendigerUser && (
+                          <span className="font-medium text-blue-600">
+                            👤 {userName((todo as any).zustaendigerUser)}
+                          </span>
+                        )}
                         {todo.zuweisungen.length > 0 && (
-                          <span>👤 {todo.zuweisungen.map(z => z.teamMitglied.name).join(', ')}</span>
+                          <span>👥 {todo.zuweisungen.map(z => z.teamMitglied.name).join(', ')}</span>
                         )}
                         {todo.erledigtAm && (
                           <span className="text-green-600">
@@ -535,12 +586,29 @@ export default function TodosPage() {
               </div>
             </div>
 
-            {/* Team-Zuweisung */}
+            {/* Zuständig: direkter Benutzer */}
             <div>
-              <Label>Zuweisen an</Label>
+              <Label>Zuständig (Person)</Label>
+              <Select
+                value={form.zustaendigerUserId || '__none__'}
+                onValueChange={(v) => setForm(f => ({ ...f, zustaendigerUserId: !v || v === '__none__' ? '' : v }))}
+              >
+                <SelectTrigger><SelectValue placeholder="Niemand zugewiesen" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Niemand zugewiesen</SelectItem>
+                  {users.map(u => (
+                    <SelectItem key={u.id} value={u.id}>{userName(u)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Team-Zuweisung (optional) */}
+            <div>
+              <Label>Zusätzlich zuweisen (Team)</Label>
               {team.length === 0 ? (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Noch kein Team — erst Mitglieder anlegen (Button „Team").
+                  Optional: Team-Mitglieder über den Team-Button anlegen.
                 </p>
               ) : (
                 <div className="flex flex-wrap gap-1.5 mt-1.5">

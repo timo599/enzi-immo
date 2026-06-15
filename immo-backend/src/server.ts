@@ -66,14 +66,14 @@ import { kautionRoutes }          from './modules/kaution/kaution.routes.js'
 import { portalRoutes }           from './modules/portal/portal.routes.js'
 import { vpiRoutes }              from './modules/vpi/vpi.routes.js'
 import { scanRoutes }             from './modules/scan/scan.routes.js'
-import { todoRoutes }             from './modules/todo/todo.routes.js'
+import { todoRoutes, allgemeineInfosRoutes } from './modules/todo/todo.routes.js'
 import { baustelleRoutes }        from './modules/baustelle/baustelle.routes.js'
 import { leitfadenRoutes }        from './modules/leitfaden/leitfaden.routes.js'
 import { einarbeitungRoutes }     from './modules/einarbeitung/einarbeitung.routes.js'
 import { betriebRoutes }          from './modules/betrieb/betrieb.routes.js'
 import { MieterhoehungReminderService } from './modules/mieterhoehung/services/mieterhoehung-reminder.service.js'
 
-const MAX_UPLOAD_BYTES = 26 * 1024 * 1024
+const MAX_UPLOAD_BYTES = 60 * 1024 * 1024  // 60 MB (große Mietvertrags-PDFs)
 
 const app = Fastify({
   logger: {
@@ -171,6 +171,7 @@ async function buildApp() {
   await app.register(vpiRoutes,                       { prefix: `${API}/vpi` })
   await app.register(scanRoutes,                      { prefix: `${API}/scan` })
   await app.register(todoRoutes,                      { prefix: `${API}/todos` })
+  await app.register(allgemeineInfosRoutes,           { prefix: `${API}/allgemeine-infos` })
   await app.register(baustelleRoutes,                 { prefix: `${API}/baustellen` })
   await app.register(leitfadenRoutes,                 { prefix: `${API}/leitfaden` })
   await app.register(einarbeitungRoutes,              { prefix: `${API}/einarbeitung` })

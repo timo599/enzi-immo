@@ -324,3 +324,18 @@ export const betriebApi = {
     nebenkosten: (params?: Record<string, unknown>) => api.get('/betrieb/ki/nebenkosten-pruefung', { params }),
   },
 }
+
+// ── Todos (erweitert mit zustaendigerUserId) ──────────────────────────────────
+export const todosApi = {
+  list:   (params?: Record<string, unknown>) => api.get('/todos', { params }),
+  create: (body: unknown) => api.post('/todos', body),
+  update: (id: string, body: unknown) => api.patch(`/todos/${id}`, body),
+  delete: (id: string) => api.delete(`/todos/${id}`),
+}
+
+// ── Allgemeine Infos ──────────────────────────────────────────────────────────
+export const allgemeineInfosApi = {
+  list: () => api.get('/allgemeine-infos'),
+  update: (schluessel: string, inhalt: string, titel?: string) =>
+    api.put(`/allgemeine-infos/${schluessel}`, { inhalt, titel }),
+}
