@@ -38,7 +38,8 @@ let _client: S3Client | null = null
 function getClient(): S3Client {
   if (!_client) {
     const cfg = loadConfig()
-    _client = new S3Client({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const clientConfig: any = {
       endpoint:        cfg.endpoint,
       region:          cfg.region,
       forcePathStyle:  cfg.forcePathStyle,
@@ -46,7 +47,12 @@ function getClient(): S3Client {
         accessKeyId:     cfg.accessKey,
         secretAccessKey: cfg.secretKey,
       },
-    })
+      // AWS SDK v3 ≥ 3.420 sendet automatisch CRC32-Checksum-Header.
+      // MinIO lehnt diese mit "Signature mismatch" ab → deaktivieren.
+      requestChecksumCalculation: 'when_required',
+      responseChecksumValidation: 'when_required',
+    }
+    _client = new S3Client(clientConfig)
   }
   return _client
 }
@@ -75,13 +81,26 @@ export interface UploadParams {
   metadata?:   Record<string, string>
 }
 
+// S3-Metadaten müssen reines ASCII sein — Sonderzeichen (ä,ü,ö,ß) encoden
+function sanitizeMetadata(meta?: Record<string, string>): Record<string, string> | undefined {
+  if (!meta) return undefined
+  return Object.fromEntries(
+    Object.entries(meta).map(([k, v]) => [
+      k,
+      // Encodeform: URI-encode, dann nicht-ASCII als %-Escape belassen
+      encodeURIComponent(v).replace(/%20/g, '+'),
+    ])
+  )
+}
+
 export async function uploadFile({ key, body, mimeType, metadata }: UploadParams): Promise<void> {
   const cmd: PutObjectCommandInput = {
     Bucket:      getBucket(),
     Key:         key,
     Body:        body,
     ContentType: mimeType,
-    Metadata:    metadata,
+    ContentLength: body.length,          // explizit setzen → verhindert chunked-encoding
+    Metadata:    sanitizeMetadata(metadata),
   }
   // Server-side encryption only when explicitly enabled (AWS S3, not MinIO local)
   if (process.env.S3_USE_SSE === 'true') {

@@ -1,7 +1,7 @@
 import fp from 'fastify-plugin'
 import fastifyJwt from '@fastify/jwt'
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify'
-import { UnauthorizedError } from '../utils/errors.js'
+import { ForbiddenError, UnauthorizedError } from '../utils/errors.js'
 
 export interface JwtPayload {
   sub: string        // userId
@@ -44,11 +44,28 @@ const jwtPlugin: FastifyPluginAsync = fp(async (fastify) => {
     async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       try {
         await request.jwtVerify<JwtPayload>()
-        // Decorate request with convenience accessors
-        request.currentUser = request.user
-        request.tenantId = request.user.tenantId
       } catch {
         throw new UnauthorizedError('Ungültiges oder abgelaufenes Token')
+      }
+
+      // Decorate request with convenience accessors
+      request.currentUser = request.user
+      request.tenantId = request.user.tenantId
+
+      if (request.currentUser.rolle === 'eigentuemer_readonly') {
+        const method = request.method.toUpperCase()
+        const path = request.url.split('?')[0] ?? request.url
+        const isReadRequest    = method === 'GET' || method === 'HEAD' || method === 'OPTIONS'
+        const isAllowedChat    = method === 'POST' && path === '/api/v1/enzi/chat'
+        // Todos & Allgemeine Infos: Jürgen darf anlegen, bearbeiten und lesen
+        const isAllowedTodo    = path.startsWith('/api/v1/todos') &&
+                                 ['GET','POST','PATCH','DELETE'].includes(method)
+        const isAllowedInfos   = path.startsWith('/api/v1/allgemeine-infos') &&
+                                 ['GET','PUT'].includes(method)
+
+        if (!isReadRequest && !isAllowedChat && !isAllowedTodo && !isAllowedInfos) {
+          throw new ForbiddenError('Dieser Zugang ist nur lesend. Änderungen an Todos und Infos sind erlaubt.')
+        }
       }
     },
   )

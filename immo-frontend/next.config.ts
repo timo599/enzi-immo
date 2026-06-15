@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
     "192.168.2.0/24",
     "*.trycloudflare.com",
   ],
+  // Großes Upload-Limit für den Reverse-Proxy (Mietvertrags-PDFs bis 60 MB)
+  experimental: {
+    proxyTimeout: 120_000,
+  },
 };
 
 export default nextConfig;
