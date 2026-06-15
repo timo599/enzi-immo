@@ -231,7 +231,7 @@ model User {
   rolle        UserRole  @default(verwalter)
   aktiv        Boolean   @default(true)
   letzterLogin DateTime? @map("letzter_login")
-  erstelltAm   DateTime  @default(now()) @map("erstellt_am")
+  erstelltAm     DateTime  @default(now()) @map("erstellt_am")
 
   tenant                   Tenant             @relation(fields: [tenantId], references: [id])
   erstellteObjekte         Objekt[]           @relation("ObjektErsteller")

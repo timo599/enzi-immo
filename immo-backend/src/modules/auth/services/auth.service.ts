@@ -45,10 +45,10 @@ export class AuthService {
     }
 
     const payload = {
-      sub: user.id,
+      sub:      user.id,
       tenantId: user.tenantId,
-      email: user.email,
-      rolle: user.rolle,
+      email:    user.email,
+      rolle:    user.rolle,
     }
 
     const accessToken = this.fastify.jwt.sign(payload)

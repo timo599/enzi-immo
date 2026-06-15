@@ -170,6 +170,19 @@ const DEFAULT_SEKTIONEN = [
   { schluessel: 'notizen',            titel: 'Allgemeine Notizen',                  reihenfolge: 6 },
 ]
 
+// Blockiert nur reine Lese/Handwerker/Mieter-Rollen
+// Axel, Bastian, Kirsten, NCVerwaltung, Jürgen → alle erlaubt
+const BLOCKED_ROLLEN_INFOS = ['handwerker', 'mieter', 'mieterportal']
+
+function checkInfosZugang(req: any, reply: any): boolean {
+  const rolle = req.currentUser?.rolle ?? ''
+  if (BLOCKED_ROLLEN_INFOS.includes(rolle)) {
+    reply.status(403).send({ error: { code: 'FORBIDDEN', message: 'Allgemeine Infos sind für Handwerker und Mieter nicht zugänglich.' } })
+    return false
+  }
+  return true
+}
+
 export const allgemeineInfosRoutes: FastifyPluginAsync = async (fastify) => {
   const p   = fastify.prisma
   const a   = { preHandler: [fastify.authenticate] }
@@ -177,7 +190,8 @@ export const allgemeineInfosRoutes: FastifyPluginAsync = async (fastify) => {
   const usr = (req: any) => (req as any).currentUser?.email as string | undefined
 
   // Alle Sektionen laden (fehlende Default-Sektionen werden angelegt)
-  fastify.get('/', a, async (req) => {
+  fastify.get('/', a, async (req, reply) => {
+    if (!checkInfosZugang(req, reply)) return
     const tenantId = ten(req)
     // Defaults anlegen falls noch nicht vorhanden
     for (const s of DEFAULT_SEKTIONEN) {
@@ -199,7 +213,8 @@ export const allgemeineInfosRoutes: FastifyPluginAsync = async (fastify) => {
   })
 
   // Einzelne Sektion aktualisieren (upsert)
-  fastify.put('/:schluessel', a, async (req) => {
+  fastify.put('/:schluessel', a, async (req, reply) => {
+    if (!checkInfosZugang(req, reply)) return
     const { schluessel } = req.params as { schluessel: string }
     const { inhalt, titel } = z.object({
       inhalt: z.string(),

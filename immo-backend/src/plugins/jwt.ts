@@ -58,13 +58,13 @@ const jwtPlugin: FastifyPluginAsync = fp(async (fastify) => {
         const isReadRequest    = method === 'GET' || method === 'HEAD' || method === 'OPTIONS'
         const isAllowedChat    = method === 'POST' && path === '/api/v1/enzi/chat'
         // Todos & Allgemeine Infos: Jürgen darf anlegen, bearbeiten und lesen
-        const isAllowedTodo    = path.startsWith('/api/v1/todos') &&
-                                 ['GET','POST','PATCH','DELETE'].includes(method)
-        const isAllowedInfos   = path.startsWith('/api/v1/allgemeine-infos') &&
-                                 ['GET','PUT'].includes(method)
+        const isAllowedTodo  = path.startsWith('/api/v1/todos') &&
+                               ['GET','POST','PATCH','DELETE'].includes(method)
+        const isAllowedInfos = path.startsWith('/api/v1/allgemeine-infos') &&
+                               ['GET','PUT'].includes(method)
 
         if (!isReadRequest && !isAllowedChat && !isAllowedTodo && !isAllowedInfos) {
-          throw new ForbiddenError('Dieser Zugang ist nur lesend. Änderungen an Todos und Infos sind erlaubt.')
+          throw new ForbiddenError('Dieser Zugang ist nur lesend. Aufgaben und Allgemeine Infos dürfen bearbeitet werden.')
         }
       }
     },
